@@ -1,0 +1,49 @@
+name: Analyze WWE 2K17 PAC
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_file:
+        description: "PAC file in the repository"
+        required: true
+        default: "ch139.pac"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  pac-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify input file
+        run: |
+          test -f "${{ inputs.target_file }}" || {
+            echo "PAC file not found: ${{ inputs.target_file }}"
+            echo "Repository files:"
+            find . -maxdepth 3 -type f | sort
+            exit 1
+          }
+          ls -lh "${{ inputs.target_file }}"
+
+      - name: Run read-only PAC probe
+        run: |
+          mkdir -p analysis-output
+          python tools/pac_probe.py "${{ inputs.target_file }}" | tee analysis-output/pac-report.txt
+
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch139-pac-analysis
+          path: analysis-output/pac-report.txt
+          if-no-files-found: error
+          retention-days: 14
