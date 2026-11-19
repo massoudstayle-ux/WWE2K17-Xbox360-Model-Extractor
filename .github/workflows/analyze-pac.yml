@@ -8,6 +8,8 @@ on:
       - 'tools/pac_probe.py'
       - 'tools/pac_analyze.py'
       - 'tools/scan_decompressed.py'
+      - 'tools/parse_hspc.py'
+      - 'tests/test_parse_hspc.py'
       - 'tests/test_scan_decompressed.py'
       - 'tools/inspect_xcompress.py'
       - 'docs/**'
@@ -97,6 +99,16 @@ jobs:
             [ -f "$file" ] || continue
             name="$(basename "$file" .decompressed.bin)"
             python tools/scan_decompressed.py "$file" --output "analysis-output/signature-scan/$name-signatures.txt"
+          done
+
+      - name: Parse HSPC and SHDC directory tables
+        if: always()
+        run: |
+          mkdir -p analysis-output/container-parse
+          for file in analysis-output/decompressed/*.decompressed.bin; do
+            [ -f "$file" ] || continue
+            name="$(basename "$file" .decompressed.bin)"
+            python tools/parse_hspc.py "$file" --output "analysis-output/container-parse/$name-containers.json"
           done
 
       - name: Run read-only PAC probe and exploratory analyzer
