@@ -47,3 +47,12 @@ References:
 - The QuickBMS author explains that the ED variant requires the segment decode path and can be handled by QuickBMS / xbdecompress.
 
 The workflow now downloads the official QuickBMS Linux package and official script collection at run time, attempts decompression into `analysis-output/decompressed/`, and records the exit code and output signatures. Original PAC files remain read-only. A successful process exit alone will not be treated as proof of a valid model; the output's magic and internal structure must be checked next.
+
+
+## XMem TD decompression implementation (2026-11-19)
+
+The first QuickBMS workflow attempt failed before decoding: the mirror's `quickbms_scripts.zip` URL returned HTTP 404. QuickBMS itself downloaded, but no PAC was passed to a decoder. This was a tooling/download failure, not evidence that either PAC is invalid.
+
+The workflow now builds `PopGameTool/XMemCompression` from its public source and runs its CLI in decompression mode against copies of `ch120.pac` and `ch139.pac`. That repository documents support for whole-file XMem LZX TD streams beginning with `0F F5 12 ED`. Its implementation is compatibility-oriented reverse engineering, not an official Microsoft decoder. Results must be validated by exit status, output size, output magic, and subsequent container parsing; a generated file alone does not prove successful extraction.
+
+All decoded outputs go under `analysis-output/decompressed/`; source PAC files are read-only. If the decoder rejects a file, the next task is to compare its 16-byte header/segment table assumptions with the actual bytes and seek a second independent decoder.
