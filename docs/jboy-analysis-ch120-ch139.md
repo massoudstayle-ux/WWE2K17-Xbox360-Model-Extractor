@@ -36,3 +36,8 @@ A raw-offset inspector was added at `tools/inspect_jboy_bone_fields.py`. It emit
 Important parser caution: earlier summary labels for fields at 0x40 and 0x44 overlap by 12 bytes. They must not be treated as two independent transform vectors. The raw inspector now avoids that false separation.
 
 The workflow runs this report for each decoded JBOY. The next validation must compare values across named bones/models and, ideally, a known-good reference rig before assigning transform semantics.
+
+
+## Heuristic bone-name map
+
+`tools/map_jboy_bones.py` creates a name-based grouping for candidate root, pelvis, spine, neck, head, left/right arms, and left/right legs from each extracted model summary. This is only a naming heuristic. It does not establish bone transforms, parent semantics, skin binding, or an exportable FBX skeleton. The workflow writes JSON reports to `analysis-output/bone-map/`.
