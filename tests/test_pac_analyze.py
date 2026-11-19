@@ -1,4 +1,5 @@
 import importlib.util
+import gzip
 import unittest
 from pathlib import Path
 
@@ -18,6 +19,18 @@ class PacAnalyzeTests(unittest.TestCase):
 
     def test_signature_detection(self):
         self.assertEqual(pac.signature_hits(b"xxDDS yy"), [(2, "DDS texture")])
+
+    def test_valid_gzip_member(self):
+        payload = b"wrestler model test data" * 20
+        packed = b"PREFIX" + gzip.compress(payload) + b"TAIL"
+        found = pac.valid_gzip_members(packed)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0][0], 6)
+        self.assertEqual(found[0][2], len(payload))
+        self.assertEqual(found[0][3], payload[:16])
+
+    def test_random_gzip_marker_is_not_validated(self):
+        self.assertEqual(pac.valid_gzip_members(b"xx\\x1f\\x8bnot-a-gzip"), [])
 
     def test_aligned_values_bounds(self):
         data = (128).to_bytes(4, "little") + (9999).to_bytes(4, "little")
