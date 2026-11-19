@@ -1,6 +1,11 @@
 name: Analyze WWE 2K17 PAC
 
 on:
+  push:
+    paths:
+      - 'ch139.pac'
+      - 'tools/pac_probe.py'
+      - '.github/workflows/analyze-pac.yml'
   workflow_dispatch:
     inputs:
       target_file:
