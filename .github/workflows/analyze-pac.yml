@@ -256,6 +256,7 @@ jobs:
           done < analysis-targets.txt
 
       - name: Upload analysis report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ch120-ch139-pac-comparison
