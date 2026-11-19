@@ -5,6 +5,8 @@ on:
     paths:
       - 'ch139.pac'
       - 'tools/pac_probe.py'
+      - 'tools/pac_analyze.py'
+      - 'tests/**'
       - '.github/workflows/analyze-pac.yml'
   workflow_dispatch:
     inputs:
