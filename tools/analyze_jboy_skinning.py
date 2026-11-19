@@ -38,12 +38,13 @@ def read_palette(data: bytes, desc: int, bone_count: int, mesh_index: int) -> li
     palette = []
     for slot in range(count):
         value = be_u32(data, desc + PALETTE_OFFSET + slot * 4)
-        if value >= bone_count:
+        # The stored node index is offset by +1; zero is not a valid node.
+        if value == 0 or value > bone_count:
             raise FormatError(
-                f"mesh {mesh_index} palette slot {slot} references bone {value}, "
-                f"but model has {bone_count} bones"
+                f"mesh {mesh_index} palette slot {slot} stores node+1 value {value}, "
+                f"but model has {bone_count} nodes"
             )
-        palette.append(value)
+        palette.append(value - 1)
     return palette
 
 def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
@@ -171,7 +172,7 @@ def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
         "vertices_with_weight_sum_outside_tolerance": bad_sums,
         "global_bone_indices_used": sorted(global_bones_used),
         "candidate_encoding": {
-            "mesh_palette": "count at descriptor +0x08, followed by that many big-endian uint32 global bone indices from +0x0C (maximum 20)",
+            "mesh_palette": "count at descriptor +0x08, followed by that many big-endian uint32 node indices plus one from +0x0C (maximum 20)",
             "slot_index": "little-endian uint32 palette-local index",
             "weight": "big-endian float32",
             "sentinel_index": 255,
