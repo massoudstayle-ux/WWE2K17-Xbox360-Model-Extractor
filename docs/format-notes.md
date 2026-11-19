@@ -78,3 +78,24 @@ The JBOY exporter now exposes the known 0x50-byte bone-record fields as analysis
 The older `unknown_0x30` and `translation_candidate` keys are retained for report compatibility. These fields have not yet been validated as a complete Godot-compatible bind pose. In particular, matrix conventions, coordinate conversion, and skin-weight-to-bone mapping remain unresolved.
 
 The current CI export remains OBJ + JSON + raw decoded JBOY. It does not produce FBX, and the current geometry exporter does not yet read per-vertex skin weights. Do not treat the OBJ preview as a rigged character.
+
+
+## Skin-weight buffer boundary validation (2026-11-19)
+
+A new read-only analyzer, `tools/analyze_jboy_skinning.py`, was added after inspecting the generated ch120/ch139 comparison artifact directly.
+
+For every mesh in all four main JBOY model samples, the resolved byte span from the weight-buffer pointer to the UV-buffer pointer exactly equals:
+
+`vertex_count * weight_block_count * 8`
+
+Validation results:
+- ch120 SHDC0: 14/14 mesh spans match.
+- ch120 SHDC1: 15/15 mesh spans match.
+- ch139 SHDC0: 26/26 mesh spans match.
+- ch139 SHDC1: 20/20 mesh spans match.
+
+This confirms the per-mesh weight-buffer size and 8-byte slot stride for these 75 meshes. It does **not** yet prove the field order, byte order, or meaning of each 8-byte slot. The analyzer therefore emits raw slot bytes and candidate numeric interpretations only; it deliberately does not label them as decoded bone indices or normalized weights.
+
+The mesh descriptors also contain a palette count and a 20-entry palette area. The palette-to-weight-slot mapping still needs independent validation before generating skin joints and inverse-bind matrices.
+
+Reference format notes describe JBOY mesh palettes and weight buffers as bone-index/weight data, but the current implementation treats that as a hypothesis to verify against these Xbox 360 samples rather than blindly assuming identical packing: https://github.com/KaikoClanworth1/wwe-svr2011-pc/blob/main/docs/SVRMOD_FORMAT.md
