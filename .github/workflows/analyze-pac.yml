@@ -24,7 +24,10 @@ permissions:
 
 jobs:
   pac-probe:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -54,9 +57,9 @@ jobs:
       - name: Build XMemCompression TD decoder
         run: |
           git clone --depth 1 https://github.com/PopGameTool/XMemCompression.git /tmp/XMemCompression
-          cmake -S /tmp/XMemCompression -B /tmp/XMemCompression/build -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/XMemCompression/build --parallel 2
-          DECODER="$(find /tmp/XMemCompression/build -type f -name XMemCompression -perm -111 | head -n 1)"
+          cmake -S /tmp/XMemCompression -B /tmp/XMemCompression/build -A x64
+          cmake --build /tmp/XMemCompression/build --config Release --parallel 2
+          DECODER="$(find /tmp/XMemCompression/build -type f -iname XMemCompression.exe | head -n 1)"
           test -n "$DECODER" || { echo "XMemCompression executable not found after build"; exit 1; }
           echo "$DECODER" > /tmp/xmem-decoder-path.txt
           "$DECODER" 2>&1 | head -n 12 || true
