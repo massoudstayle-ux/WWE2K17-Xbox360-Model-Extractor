@@ -93,9 +93,12 @@ def parse_shdc(data: bytes, base: int, length: int) -> list[dict]:
 def analyze(data: bytes) -> dict:
     top = parse_hspc(data)
     nested = []
-    for item in top:
+    for parent_index, item in enumerate(top):
         if item["magic"] == "SHDC":
-            nested.extend(parse_shdc(data, item["offset"], item["length"]))
+            children = parse_shdc(data, item["offset"], item["length"])
+            for child in children:
+                child["parent_index"] = parent_index
+            nested.extend(children)
     return {
         "file_size": len(data),
         "hspc_entries": top,
