@@ -30,7 +30,7 @@ class PacAnalyzeTests(unittest.TestCase):
         self.assertEqual(found[0][3], payload[:16])
 
     def test_random_gzip_marker_is_not_validated(self):
-        self.assertEqual(pac.valid_gzip_members(b"xx\\x1f\\x8bnot-a-gzip"), [])
+        self.assertEqual(pac.valid_gzip_members(b"xx\x1f\x8bnot-a-gzip"), [])
 
     def test_aligned_values_bounds(self):
         data = (128).to_bytes(4, "little") + (9999).to_bytes(4, "little")
