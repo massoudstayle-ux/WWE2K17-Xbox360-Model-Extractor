@@ -75,9 +75,9 @@ The JBOY exporter now exposes the known 0x50-byte bone-record fields as analysis
 - global position candidate: three big-endian floats at +0x40
 - additional float at +0x4C
 
-The older `unknown_0x30` and `translation_candidate` keys are retained for report compatibility. These fields have not yet been validated as a complete Godot-compatible bind pose. In particular, matrix conventions, coordinate conversion, and skin-weight-to-bone mapping remain unresolved.
+The older `unknown_0x30` and `translation_candidate` keys are retained for report compatibility. The JBOY node-record layout is cross-checked against the published Yuke format notes: nodes are 0x50 bytes; translation is at +0x10, Euler rotation at +0x20 (R = Rz Ry Rx), and parent index at +0x30 (-1 = root). The game uses 1 unit = 10 cm and -Y up. The numeric transforms still need a visual bind-pose check in a renderer before they are used to build inverse-bind matrices.
 
-The current CI export remains OBJ + JSON + raw decoded JBOY. It does not produce FBX, and the current geometry exporter does not yet read per-vertex skin weights. Do not treat the OBJ preview as a rigged character.
+The current CI export remains OBJ + JSON + raw decoded JBOY. It does not produce FBX yet. The skinning analyzer now resolves palette-local indices and validates weight sums, but the geometry exporter still needs to combine vertex data, node hierarchy, bind transforms, and skin weights into a rigged interchange file. Do not treat the OBJ preview as a rigged character.
 
 
 ## Skin-weight buffer boundary validation (2026-11-19)
@@ -94,8 +94,14 @@ Validation results:
 - ch139 SHDC0: 26/26 mesh spans match.
 - ch139 SHDC1: 20/20 mesh spans match.
 
-This confirms the per-mesh weight-buffer size and 8-byte slot stride for these 75 meshes. It does **not** yet prove the field order, byte order, or meaning of each 8-byte slot. The analyzer therefore emits raw slot bytes and candidate numeric interpretations only; it deliberately does not label them as decoded bone indices or normalized weights.
+This confirms the per-mesh weight-buffer size and 8-byte slot stride for these 75 meshes. The layout is now decoded using the published JBOY structure: the descriptor stores a palette count at +0x08, followed by up to 20 big-endian node-index-plus-one values at +0x0C. Each 8-byte influence record stores a palette-local index in its first four bytes (observed as a little-endian integer with the upper three bytes zero) and a big-endian float32 weight; 0xFF marks an unused influence. The palette value is reduced by one to obtain the node index.
 
-The mesh descriptors also contain a palette count and a 20-entry palette area. The palette-to-weight-slot mapping still needs independent validation before generating skin joints and inverse-bind matrices.
+Validation against all four 109-node main models:
+- 75/75 mesh weight spans match the expected size.
+- 38,230 vertices checked.
+- 91,390 active influence records decoded.
+- 40,299 unused influence slots identified.
+- Zero palette-index errors, zero invalid weights, and zero vertices with active weights outside 1.0 ± 0.02.
+- Each model uses 101 of its 109 skeleton nodes in the mesh palettes.
 
-Reference format notes describe JBOY mesh palettes and weight buffers as bone-index/weight data, but the current implementation treats that as a hypothesis to verify against these Xbox 360 samples rather than blindly assuming identical packing: https://github.com/KaikoClanworth1/wwe-svr2011-pc/blob/main/docs/SVRMOD_FORMAT.md
+The hierarchy candidate checks also found no out-of-range parent references or cycles in the four main models. These checks validate the binary mapping and normalized weights, not the final visual deformation. The node transforms and inverse-bind matrices still need a renderer/Godot validation pass before a production FBX export. Reference: https://github.com/KaikoClanworth1/wwe-svr2011-pc/blob/main/docs/SVRMOD_FORMAT.md
