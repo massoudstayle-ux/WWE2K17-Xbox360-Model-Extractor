@@ -11,6 +11,7 @@ on:
       - 'tools/decode_yuke_bpe.py'
       - 'tools/export_jboy_obj.py'
       - 'tools/extract_jboy_models.py'
+      - 'tools/analyze_jboy_skinning.py'
       - 'tests/test_decode_yuke_bpe.py'
       - 'tests/test_export_jboy_obj.py'
       - 'tools/parse_hspc.py'
@@ -124,6 +125,21 @@ jobs:
             [ -f "$file" ] || continue
             python tools/extract_jboy_models.py "$file" --output-dir analysis-output/extracted-models
           done
+
+      - name: Validate JBOY skin-weight buffer spans
+        if: always()
+        run: |
+          mkdir -p analysis-output/skinning
+          found=0
+          for file in analysis-output/extracted-models/*_JBOY.bin; do
+            [ -f "$file" ] || continue
+            found=1
+            name="$(basename "$file" _JBOY.bin)"
+            python tools/analyze_jboy_skinning.py "$file" --samples 5 --output "analysis-output/skinning/$name-skinning.json"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No decoded JBOY files were available for skin-weight validation." | tee analysis-output/skinning/NO-JBOY-INPUT.txt
+          fi
 
       - name: Run read-only PAC probe and exploratory analyzer
         env:
