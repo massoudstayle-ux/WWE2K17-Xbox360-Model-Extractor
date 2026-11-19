@@ -150,6 +150,17 @@ jobs:
             python tools/extract_texture_resources.py "$file" --output-dir analysis-output/texture-resources
           done
 
+      - name: Build visual audit of recovered DDS candidates
+        if: always()
+        run: |
+          python -m pip install --disable-pip-version-check Pillow
+          mkdir -p analysis-output/texture-audit
+          for file in analysis-output/bpe-textures/*.dds; do
+            [ -f "$file" ] || continue
+            cp "$file" analysis-output/texture-audit/
+          done
+          python tools/build_dds_contact_sheet.py analysis-output/texture-audit --output-dir analysis-output/texture-audit
+
       - name: Decode BPE resources and export JBOY static meshes
         if: always()
         run: |
