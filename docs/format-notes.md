@@ -36,3 +36,14 @@ Never overwrite source PAC files. Keep test input outside this repository. Do no
 The read-only `tools/pac_analyze.py` now reports fixed-window entropy, common embedded signatures, printable ASCII strings, and plausible in-range 32-bit values in both byte orders from the first 256 bytes. Each is a candidate observation, not a confirmed format field.
 
 Automated unit tests cover entropy edge cases, string offsets, signature detection, and bounds filtering. No extraction or decompression is implemented yet.
+
+
+## Confirmed outer compression signature (2026-11-19)
+
+Both uploaded samples begin with bytes `0F F5 12 ED`. This is identified in QuickBMS community documentation as Xbox 360 `XCOMPRESS_FILE_IDENTIFIER_LZXTDECODE`, associated with `XMemDecompressSegmentTD` rather than ordinary GZIP or the separate LZXNATIVE signature `0F F5 12 EE`.
+
+References:
+- QuickBMS XCompress file script is listed by the author's script index as supporting `0x0FF512ED`, `XMemDecompress`, and `0x0FF512EE`.
+- The QuickBMS author explains that the ED variant requires the segment decode path and can be handled by QuickBMS / xbdecompress.
+
+The workflow now downloads the official QuickBMS Linux package and official script collection at run time, attempts decompression into `analysis-output/decompressed/`, and records the exit code and output signatures. Original PAC files remain read-only. A successful process exit alone will not be treated as proof of a valid model; the output's magic and internal structure must be checked next.
