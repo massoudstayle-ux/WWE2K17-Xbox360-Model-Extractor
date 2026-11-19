@@ -41,3 +41,4 @@ The workflow runs this report for each decoded JBOY. The next validation must co
 ## Heuristic bone-name map
 
 `tools/map_jboy_bones.py` creates a name-based grouping for candidate root, pelvis, spine, neck, head, left/right arms, and left/right legs from each extracted model summary. This is only a naming heuristic. It does not establish bone transforms, parent semantics, skin binding, or an exportable FBX skeleton. The workflow writes JSON reports to `analysis-output/bone-map/`.
+\nThe heuristic map report also includes candidate local-position, local-Euler-rotation, global-position, and translation arrays copied from the model summary, plus field-coverage counts. These are raw candidates, not verified transform semantics; notably the earlier raw-field inspection warned that candidate blocks overlap.\n
