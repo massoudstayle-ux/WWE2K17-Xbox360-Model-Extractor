@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import math
 import struct
+import zlib
 from collections import Counter
 from pathlib import Path
 
@@ -55,6 +56,28 @@ def signature_hits(data: bytes) -> list[tuple[int, str]]:
             hits.append((offset, label))
             offset += 1
     return sorted(hits)
+
+def valid_gzip_members(data: bytes, max_output: int = 32 * 1024 * 1024) -> list[tuple[int, int, int, bytes]]:
+    """Return (offset, compressed_size, output_size, output_prefix) for validated members."""
+    results = []
+    marker = b"\\x1f\\x8b"
+    offset = 0
+    while True:
+        offset = data.find(marker, offset)
+        if offset < 0:
+            break
+        try:
+            decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            output = decoder.decompress(data[offset:], max_output + 1)
+            if decoder.eof and len(output) <= max_output:
+                trailing = len(decoder.unused_data)
+                consumed = len(data) - offset - trailing
+                if consumed >= 18:
+                    results.append((offset, consumed, len(output), output[:16]))
+        except zlib.error:
+            pass
+        offset += 2
+    return results
 
 def aligned_values(data: bytes, endian: str, file_size: int) -> list[tuple[int, int]]:
     fmt = "<I" if endian == "little" else ">I"
@@ -118,7 +141,7 @@ def main() -> int:
         print(f"  {endian}-endian: " + (", ".join(f"+0x{p:X}=0x{v:X}" for p, v in values) if values else "none"))
 
     print("\nInterpretation limits:")
-    print("- Signature matches may occur inside compressed/encrypted data by coincidence.")
+    print("- Raw signature matches are only candidates; validated GZIP members above passed an actual decompression check.")
     print("- In-range integers are only offset candidates, not confirmed pointers.")
     print("- High entropy does not prove encryption or compression.")
     print("- No decompression, extraction, or source-file modification was performed.")
