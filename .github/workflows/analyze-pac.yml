@@ -1,5 +1,7 @@
 name: Analyze WWE 2K17 PAC
 
+# Re-run extraction and the rigged-FBX prototype when this workflow changes.
+
 on:
   push:
     paths:
