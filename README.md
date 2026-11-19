@@ -16,6 +16,22 @@ Research tools for inspecting **user-provided WWE 2K17 Xbox 360 files** and inve
 - [ ] Match accessory bone hierarchies to the body skeleton and merge compatible meshes
 - [ ] Decode texture resources, identify image formats, and assign skin, hair, and clothing materials
 
+
+## Resource findings from ch120.pac and ch139.pac
+
+The successful run 73 artifact contains these separate decoded resources:
+
+- `ch120`: body variants with 109 bones, a separate `2710` hair mesh (1,756 vertices, 24 bones), and a separate `4E22` eyelash/eyeshadow resource (352 vertices, 11 bones).
+- `ch139`: body variants with 109 bones, a separate `4E22` eyelash/eyeshadow resource (417 vertices, 11 bones), and a `271A` resource labeled `towel` (209 vertices, 100 bones).
+- The body resources contain multiple mesh sub-objects. Their exact clothing/material assignments still need shader and texture mapping; do not assume every sub-object is clothing.
+
+The workflow now includes:
+- Rigged FBX candidate export for non-body JBOY resources, stored separately from the body FBXs.
+- Decoding of all SHDC BPE resources and recovery of DDS candidates only when the decompressed data passes standard DDS header checks.
+- A conservative raw non-BPE SHDC resource dump for later format identification.
+
+Separate accessory FBXs are not yet proven compatible with the body's 109-bone skeleton. Texture candidates are not yet visually verified or assigned to skin, hair, and clothing materials.
+
 ## Planned tools
 
 ### 1. PAC probe
