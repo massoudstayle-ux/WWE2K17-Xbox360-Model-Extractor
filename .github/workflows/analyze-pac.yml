@@ -28,6 +28,7 @@ on:
       - 'tools/parse_hspc.py'
       - 'tools/extract_texture_resources.py'
       - 'tools/decode_bpe_texture_resources.py'
+      - 'tools/build_dds_contact_sheet.py'
       - 'tests/test_parse_hspc.py'
       - 'tests/test_scan_decompressed.py'
       - 'tools/inspect_xcompress.py'
