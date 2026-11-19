@@ -31,19 +31,23 @@ jobs:
           python-version: "3.11"
 
       - name: Verify input file
+        env:
+          PAC_FILE: ${{ inputs.target_file || 'ch139.pac' }}
         run: |
-          test -f "${{ inputs.target_file }}" || {
-            echo "PAC file not found: ${{ inputs.target_file }}"
+          test -f "$PAC_FILE" || {
+            echo "PAC file not found: $PAC_FILE"
             echo "Repository files:"
             find . -maxdepth 3 -type f | sort
             exit 1
           }
-          ls -lh "${{ inputs.target_file }}"
+          ls -lh "$PAC_FILE"
 
       - name: Run read-only PAC probe
+        env:
+          PAC_FILE: ${{ inputs.target_file || 'ch139.pac' }}
         run: |
           mkdir -p analysis-output
-          python tools/pac_probe.py "${{ inputs.target_file }}" | tee analysis-output/pac-report.txt
+          python tools/pac_probe.py "$PAC_FILE" | tee analysis-output/pac-report.txt
 
       - name: Upload analysis report
         uses: actions/upload-artifact@v4
