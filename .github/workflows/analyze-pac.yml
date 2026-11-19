@@ -15,6 +15,7 @@ on:
       - 'tools/extract_jboy_models.py'
       - 'tools/analyze_jboy_skinning.py'
       - 'tools/blender_export_jboy_fbx.py'
+      - 'tools/merge_accessory_fbx.py'
       - 'tools/validate_jboy_bone_hierarchy.py'
       - 'tools/inspect_jboy_bone_fields.py'
       - 'tools/map_jboy_bones.py'
@@ -299,6 +300,19 @@ jobs:
             echo "These are separate candidate FBXs, not yet merged into the body skeleton."
             echo "Texture extraction and material assignment are not claimed by this step."
           } | tee -a "$REPORT"
+
+      - name: Merge only skeleton-compatible hair and accessory FBXs
+        if: always()
+        run: |
+          BLENDER="$(cat /tmp/blender-path.txt)"
+          mkdir -p analysis-output/fbx-combined
+          for body in analysis-output/fbx/*.fbx; do
+            [ -f "$body" ] || continue
+            name="$(basename "$body" .fbx)"
+            "$BLENDER" --background --python tools/merge_accessory_fbx.py -- "$body" "analysis-output/fbx-combined/$name-complete.fbx" analysis-output/fbx-accessories/*.fbx
+            test -s "analysis-output/fbx-combined/$name-complete.fbx" || { echo "Combined FBX missing or empty: $name" >&2; exit 1; }
+          done
+          ls -lh analysis-output/fbx-combined
 
       - name: Run read-only PAC probe and exploratory analyzer
         env:
