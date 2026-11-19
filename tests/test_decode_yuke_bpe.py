@@ -10,8 +10,8 @@ spec.loader.exec_module(decoder)
 
 def identity_bpe(data: bytes) -> bytes:
     # Code table: identity mappings for 0..127 via the run marker, then 128..255.
-    payload = bytearray([255])
-    payload.extend(range(128, 256))
+    payload = bytearray([255, 128, 126])
+    payload.extend(range(129, 256))
     payload.extend(struct.pack("<H", len(data)))
     payload.extend(data)
     header = b"BPE " + struct.pack("<III", 0x100, len(payload), len(data))
