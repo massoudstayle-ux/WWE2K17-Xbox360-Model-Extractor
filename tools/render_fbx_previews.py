@@ -57,6 +57,8 @@ scene.render.resolution_y = 1024
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = "PNG"
 scene.render.filepath = os.path.abspath(output)
+if scene.world is None:
+    scene.world = bpy.data.worlds.new("PreviewWorld")
 scene.world.color = (0.08, 0.08, 0.08)
 os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
 bpy.ops.render.render(write_still=True)
