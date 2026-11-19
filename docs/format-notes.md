@@ -107,3 +107,12 @@ Validation against all four 109-node main models:
 - Each model uses 101 of its 109 skeleton nodes in the mesh palettes.
 
 The hierarchy candidate checks also found no out-of-range parent references or cycles in the four main models. The node transform parser was corrected in this pass: Euler rotation is read from +0x1C and +0x40 is treated as a bounding-sphere candidate, not a global position. These checks validate the binary mapping and normalized weights, not the final visual deformation. Node rotation order, coordinate conversion, bind pose and inverse-bind matrices still need a renderer/Godot validation pass before a production FBX export. Reference: https://github.com/KaikoClanworth1/wwe-svr2011-pc/blob/main/docs/SVRMOD_FORMAT.md
+
+
+## FBX and accessory audit (2026-11-19)
+
+The downloaded artifact for workflow run 44558087745 was inspected directly. It contains four non-empty main-body FBX files (ch120/ch139, SHDC0/SHDC1) and the decoded JBOY/JSON analysis outputs. It does not contain an `fbx-accessories/`, `fbx-combined/`, `texture-resources/`, `bpe-textures/`, or `texture-audit/` directory, and it contains no DDS image files. Therefore this artifact proves only the four body FBX exports; it does not prove hair, clothing, eyelashes, or skin textures were merged.
+
+The extracted model summaries identify a promising accessory match for ch120: resource `2710` has 24 bones, including `Bip`, `Bip Spine`, `Bip Spine1`, `Bip Neck`, `Neck_x`, `Bip Head`, and the hair/face bones. These names are present in the 109-node ch120 body skeleton. This is a candidate for the existing strict accessory merge validator; it must still pass the rest-transform and vertex-group checks before being included in a combined FBX. ch139 resource `271A` has 100 bones and is labeled as a towel candidate; do not classify it as clothing until the mesh is visually inspected.
+
+Next validation must run the current workflow revision and inspect its actual artifact. Confirm that separate accessory FBXs were exported, record which passed/rejected the strict shared-skeleton merge, and visually inspect the resulting combined FBX in Blender or Godot. Texture recovery remains incomplete until actual image files decode and their UV/material assignments are confirmed. The original PAC inputs remain read-only.
