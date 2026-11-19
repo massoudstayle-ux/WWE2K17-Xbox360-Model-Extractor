@@ -9,15 +9,15 @@ import re
 from pathlib import Path
 
 LABELS = {
-    "root": (r"\\broot\\b",),
+    "root": (r"\broot\b",),
     "pelvis": (r"pelvis|hip",),
     "spine": (r"spine|torso|chest",),
-    "neck": (r"\\bneck\\b",),
-    "head": (r"\\bhead\\b",),
-    "left_arm": (r"left.*(arm|shoulder|hand)|l_(arm|shoulder|hand)|\\barm_l\\b",),
-    "right_arm": (r"right.*(arm|shoulder|hand)|r_(arm|shoulder|hand)|\\barm_r\\b",),
-    "left_leg": (r"left.*(leg|thigh|knee|foot)|l_(leg|thigh|knee|foot)|\\bleg_l\\b",),
-    "right_leg": (r"right.*(leg|thigh|knee|foot)|r_(leg|thigh|knee|foot)|\\bleg_r\\b",),
+    "neck": (r"\bneck\b",),
+    "head": (r"\bhead\b",),
+    "left_arm": (r"left.*(arm|shoulder|hand)|l_(arm|shoulder|hand)|\barm_l\b",),
+    "right_arm": (r"right.*(arm|shoulder|hand)|r_(arm|shoulder|hand)|\barm_r\b",),
+    "left_leg": (r"left.*(leg|thigh|knee|foot)|l_(leg|thigh|knee|foot)|\bleg_l\b",),
+    "right_leg": (r"right.*(leg|thigh|knee|foot)|r_(leg|thigh|knee|foot)|\bleg_r\b",),
 }
 
 def classify(name):
@@ -65,7 +65,7 @@ def main():
     rendered = json.dumps(report, indent=2)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered + "\\n", encoding="utf-8")
+        args.output.write_text(rendered + "\n", encoding="utf-8")
     print(rendered)
     return 0 if not report["invalid_parent_candidates"] else 2
 
