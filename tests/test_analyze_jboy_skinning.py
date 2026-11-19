@@ -12,9 +12,9 @@ def make_jboy(local_indices=(0, 1), weights=(0.75, 0.25), palette=(2, 0)):
     struct.pack_into(">I", data, 0x20, 3)       # three bones
     desc = 0x28
     struct.pack_into(">I", data, desc, 1)       # one vertex
+    struct.pack_into(">I", data, desc + 0x08, len(palette))
     for i, bone in enumerate(palette):
-        struct.pack_into(">I", data, desc + 0x08 + i * 4, bone)
-    struct.pack_into(">I", data, desc + 0x08 + len(palette) * 4, 0xFFFFFFFF)
+        struct.pack_into(">I", data, desc + 0x0C + i * 4, bone)
     struct.pack_into(">I", data, desc + 0x5C, len(local_indices))
     weight_offset = 0x200
     uv_offset = weight_offset + len(local_indices) * 8
