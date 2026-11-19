@@ -241,6 +241,43 @@ jobs:
           fi
           ls -lh analysis-output/fbx
 
+
+      - name: Export accessory and clothing JBOY candidates
+        if: always()
+        run: |
+          BLENDER="$(cat /tmp/blender-path.txt)"
+          mkdir -p analysis-output/fbx-accessories
+          REPORT="analysis-output/fbx-accessories/export-report.txt"
+          : > "$REPORT"
+          found=0
+          exported=0
+          for file in analysis-output/extracted-models/*_JBOY.bin; do
+            [ -f "$file" ] || continue
+            case "$file" in
+              *_SHDC0_entry0_0_JBOY.bin|*_SHDC1_entry0_0_JBOY.bin) continue ;;
+            esac
+            found=$((found + 1))
+            name="$(basename "$file" _JBOY.bin)"
+            echo "=== $name ===" | tee -a "$REPORT"
+            set +e
+            "$BLENDER" --background --python tools/blender_export_jboy_fbx.py -- "$file" "analysis-output/fbx-accessories/$name.fbx" >> "$REPORT" 2>&1
+            RC=$?
+            set -e
+            if [ "$RC" -eq 0 ] && [ -s "analysis-output/fbx-accessories/$name.fbx" ]; then
+              exported=$((exported + 1))
+              echo "STATUS=EXPORTED_FBX" | tee -a "$REPORT"
+            else
+              rm -f "analysis-output/fbx-accessories/$name.fbx"
+              echo "STATUS=NOT_EXPORTED exit_code=$RC (inspect log; may be unskinned or incompatible)" | tee -a "$REPORT"
+            fi
+          done
+          {
+            echo "Accessory JBOY candidates found: $found"
+            echo "Accessory FBX files exported: $exported"
+            echo "These are separate candidate FBXs, not yet merged into the body skeleton."
+            echo "Texture extraction and material assignment are not claimed by this step."
+          } | tee -a "$REPORT"
+
       - name: Run read-only PAC probe and exploratory analyzer
         env:
           TARGET_FILE: ${{ inputs.target_file }}
