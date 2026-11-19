@@ -3,6 +3,7 @@ name: Analyze WWE 2K17 PAC
 on:
   push:
     paths:
+      - 'ch120.pac'
       - 'ch139.pac'
       - 'tools/pac_probe.py'
       - 'tools/pac_analyze.py'
@@ -34,34 +35,44 @@ jobs:
 
       - name: Verify input file
         env:
-          PAC_FILE: ${{ inputs.target_file || 'ch139.pac' }}
+          TARGET_FILE: ${{ inputs.target_file }}
         run: |
-          test -f "$PAC_FILE" || {
-            echo "PAC file not found: $PAC_FILE"
-            echo "Repository files:"
-            find . -maxdepth 3 -type f | sort
-            exit 1
-          }
-          ls -lh "$PAC_FILE"
+          if [ -n "$TARGET_FILE" ]; then
+            test -f "$TARGET_FILE" || { echo "PAC file not found: $TARGET_FILE"; exit 1; }
+            echo "$TARGET_FILE" > analysis-targets.txt
+          else
+            : > analysis-targets.txt
+            for file in ch120.pac ch139.pac; do
+              if [ -f "$file" ]; then echo "$file" >> analysis-targets.txt; fi
+            done
+          fi
+          test -s analysis-targets.txt || { echo "No target PAC files found"; exit 1; }
+          while IFS= read -r file; do ls -lh "$file"; done < analysis-targets.txt
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
       - name: Run read-only PAC probe and exploratory analyzer
         env:
-          PAC_FILE: ${{ inputs.target_file || 'ch139.pac' }}
+          TARGET_FILE: ${{ inputs.target_file }}
         run: |
           mkdir -p analysis-output
-          {
-            python tools/pac_probe.py "$PAC_FILE"
-            echo
-            python tools/pac_analyze.py "$PAC_FILE"
-          } | tee analysis-output/pac-report.txt
+          while IFS= read -r PAC_FILE; do
+            {
+              echo "=================================================="
+              echo "ANALYZING: $PAC_FILE"
+              echo "=================================================="
+              python tools/pac_probe.py "$PAC_FILE"
+              echo
+              python tools/pac_analyze.py "$PAC_FILE"
+              echo
+            } | tee -a analysis-output/pac-report.txt
+          done < analysis-targets.txt
 
       - name: Upload analysis report
         uses: actions/upload-artifact@v4
         with:
-          name: ch139-pac-analysis
+          name: ch120-ch139-pac-comparison
           path: analysis-output/pac-report.txt
           if-no-files-found: error
           retention-days: 14
