@@ -13,6 +13,7 @@ on:
       - 'tools/decode_yuke_bpe.py'
       - 'tools/export_jboy_obj.py'
       - 'tools/extract_jboy_models.py'
+      - 'tools/audit_jboy_material_links.py'
       - 'tools/analyze_jboy_skinning.py'
       - 'tools/blender_export_jboy_fbx.py'
       - 'tools/merge_accessory_fbx.py'
@@ -172,6 +173,21 @@ jobs:
             [ -f "$file" ] || continue
             python tools/extract_jboy_models.py "$file" --output-dir analysis-output/extracted-models
           done
+
+      - name: Audit JBOY material slots and UV links (read-only)
+        if: always()
+        run: |
+          mkdir -p analysis-output/material-audit
+          found=0
+          for file in analysis-output/extracted-models/*_JBOY.bin; do
+            [ -f "$file" ] || continue
+            found=1
+            name="$(basename "$file" _JBOY.bin)"
+            python tools/audit_jboy_material_links.py "$file" --output "analysis-output/material-audit/$name-material-audit.json"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No JBOY files available for material-slot audit." | tee analysis-output/material-audit/NO-JBOY-INPUT.txt
+          fi
 
       - name: Validate candidate bone hierarchy in model summaries
         if: always()
