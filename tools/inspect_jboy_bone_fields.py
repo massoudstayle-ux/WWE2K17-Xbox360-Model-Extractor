@@ -13,7 +13,7 @@ import struct
 from pathlib import Path
 
 RECORD_SIZE = 0x50
-CANDIDATE_OFFSETS = (0x10, 0x20, 0x30, 0x40)
+CANDIDATE_OFFSETS = (0x10, 0x20, 0x40)\n# Offset 0x30 is interpreted separately as the candidate parent index.\n# Offset 0x44 overlaps the 0x40 candidate block and is not a separate field.
 
 class FormatError(ValueError):
     pass
@@ -49,7 +49,7 @@ def inspect(data: bytes) -> dict:
                      "candidate_fields":fields})
     return {"format":data[:4].decode("ascii"),"bone_count":count,
             "bone_table_offset":bone_offset,"record_size":RECORD_SIZE,"bones":bones,
-            "warning":"Fields are raw offset-based candidates only. No translation, rotation, scale, parent, or bind-pose semantics are asserted."}
+            "warning":"Fields are raw offset-based candidates only. Offset 0x30 is separately treated as a parent-index candidate; the 0x40 block overlaps 0x4C. No transform or bind-pose semantics are asserted."}
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
