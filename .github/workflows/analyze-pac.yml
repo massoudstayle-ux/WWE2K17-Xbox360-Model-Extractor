@@ -25,6 +25,7 @@ on:
       - 'tests/test_decode_yuke_bpe.py'
       - 'tests/test_export_jboy_obj.py'
       - 'tools/parse_hspc.py'
+      - 'tools/extract_texture_resources.py'
       - 'tests/test_parse_hspc.py'
       - 'tests/test_scan_decompressed.py'
       - 'tools/inspect_xcompress.py'
@@ -125,6 +126,16 @@ jobs:
             [ -f "$file" ] || continue
             name="$(basename "$file" .decompressed.bin)"
             python tools/parse_hspc.py "$file" --output "analysis-output/container-parse/$name-containers.json"
+          done
+
+
+      - name: Extract non-BPE resources and validated DDS texture candidates
+        if: always()
+        run: |
+          mkdir -p analysis-output/texture-resources
+          for file in analysis-output/decompressed/*.decompressed.bin; do
+            [ -f "$file" ] || continue
+            python tools/extract_texture_resources.py "$file" --output-dir analysis-output/texture-resources
           done
 
       - name: Decode BPE resources and export JBOY static meshes
