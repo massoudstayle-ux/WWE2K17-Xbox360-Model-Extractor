@@ -1,50 +1,43 @@
 # WWE 2K17 Xbox 360 Model Extractor
 
-Research tools for inspecting **user-provided WWE 2K17 Xbox 360 files** and investigating a path toward extracting wrestler models and converting supported assets to formats such as FBX or glTF/GLB for Godot.
+Research tools for inspecting **user-provided WWE 2K17 Xbox 360 files** and converting supported wrestler resources into rigged FBX assets for Godot.
 
-> This project does not include game files, copyrighted assets, or extracted wrestler models.
+> This project does not include game files, copyrighted assets, or extracted wrestler models in the Git repository. Generated analysis artifacts are temporary GitHub Actions outputs.
 
-## Current status
+## Current status (2026-11-19)
 
-- [x] Repository initialized
-- [x] PAC container structure research for ch120.pac and ch139.pac
-- [x] XMem TD decompression and HSPC/SHDC/BPE resource extraction
-- [x] JBOY geometry extraction to OBJ
-- [x] 109-node hierarchy and skin-weight structure analysis
-- [x] Add a first rigged FBX export stage for SHDC0/SHDC1 main-body JBOY resources
-- [ ] Run and inspect the latest FBX export artifact; verify bone transforms, bind pose, and deformation in Godot
-- [ ] Match accessory bone hierarchies to the body skeleton and merge compatible meshes
-- [ ] Decode texture resources, identify image formats, and assign skin, hair, and clothing materials
+- [x] PAC container analysis and XMem TD decompression for `ch120.pac` and `ch139.pac`
+- [x] HSPC / SHDC / BPE resource extraction and JBOY mesh decoding
+- [x] Main-body rigged FBX export for SHDC0 and SHDC1 variants
+- [x] Decode separate hair / face / accessory JBOY resources into FBX candidates
+- [x] Merge compatible accessories into the matching 109-bone body skeleton
+- [x] Recover and visually preview DDS texture candidates
+- [ ] Match JBOY material/shader texture slots to the correct mesh sub-objects
+- [ ] Assign diffuse, normal, mask, hair, skin, and clothing materials in FBX
+- [ ] Validate bind pose, orientation, skin deformation, and appearance in Godot
 
+## Verified results: workflow run 79
 
-## Resource findings from ch120.pac and ch139.pac
+The successful [GitHub Actions run 79](https://github.com/massoudstayle-ux/WWE2K17-Xbox360-Model-Extractor/actions/runs/44564091342) produced four combined FBX files:
 
-The successful run 73 artifact contains these separate decoded resources:
+- `ch120_SHDC0_entry0_0-complete.fbx`
+- `ch120_SHDC1_entry0_0-complete.fbx`
+- `ch139_SHDC0_entry0_0-complete.fbx`
+- `ch139_SHDC1_entry0_0-complete.fbx`
 
-- `ch120`: body variants with 109 bones, a separate `2710` hair mesh (1,756 vertices, 24 bones), and a separate `4E22` eyelash/eyeshadow resource (352 vertices, 11 bones).
-- `ch139`: body variants with 109 bones, a separate `4E22` eyelash/eyeshadow resource (417 vertices, 11 bones), and a `271A` resource labeled `towel` (209 vertices, 100 bones).
-- The body resources contain multiple mesh sub-objects. Their exact clothing/material assignments still need shader and texture mapping; do not assume every sub-object is clothing.
+The accessory merge reports confirm seven successful accessory merges across the four outputs, with zero rejected accessories:
+- ch120: the 24-bone `2710` hair resource and 11-bone `4E22` face/eyelash resource merged into both SHDC variants.
+- ch139 SHDC0: the 11-bone `4E22` face/eyelash resource merged.
+- ch139 SHDC1: the 100-bone `271A` towel/accessory candidate and 11-bone `4E22` face/eyelash resource merged. The `271A` mesh still needs visual review before calling it clothing.
 
-The workflow now includes:
-- Rigged FBX candidate export for non-body JBOY resources, stored separately from the body FBXs.
-- Decoding of all SHDC BPE resources and recovery of DDS candidates only when the decompressed data passes standard DDS header checks.
-- A conservative raw non-BPE SHDC resource dump for later format identification.
+The workflow also decoded 30 BPE resources from ch120 and 29 from ch139, recovering 20 and 31 DDS candidates respectively (51 total). The visual contact sheet includes skin/face UV atlases and clothing/gear UV regions, including shirts, trousers, shoes, wrist gear, and body skin. These are recovered texture candidates; material-to-mesh assignments have not yet been completed.
 
-Separate accessory FBXs are not yet proven compatible with the body's 109-bone skeleton. Texture candidates are not yet visually verified or assigned to skin, hair, and clothing materials.
+## Important limitations
 
-## Planned tools
-
-### 1. PAC probe
-
-A read-only Python utility that reports file size, initial bytes, candidate signatures, and entropy. It does **not** modify input files or claim to decompress them.
-
-### 2. Format analysis
-
-Record verified observations and test results in `docs/format-notes.md`. Unknown structures will be labeled as hypotheses until confirmed against multiple files.
-
-### 3. Model conversion
-
-Static OBJ geometry is exported. The repository validates mesh palettes, per-vertex influence records, and candidate node hierarchy. A first Blender-based rigged FBX export stage now targets the main-body JBOY resources in both SHDC0 and SHDC1 variants. This exporter is still a prototype: its transforms and deformation must be visually validated in Godot, and separate hair, eyelashes, clothing, and accessory resources have not yet been merged. Do not treat the FBX export step as a visually verified complete wrestler until that validation is finished.
+- Successful automated merging proves matching bone names, rest transforms, armature transforms, and vertex-group mappings. It does **not** prove visual correctness in Godot.
+- The DDS contact sheet is a preview only. The main texture atlas clearly contains skin and clothing regions, but the model's material slots and shader assignments still need to be decoded before the FBX can display them correctly.
+- Do not assume every body sub-mesh is clothing. Keep the SHDC0/SHDC1 variants separate until they are compared in a renderer.
+- The original PAC files are read-only inputs and must not be overwritten or committed.
 
 ## Usage
 
@@ -57,10 +50,10 @@ python tools/pac_probe.py path/to/ch150.pac
 ## Safety and legal notes
 
 - Use files from a game copy you own and are legally permitted to inspect.
-- Do not commit original game files, extracted assets, keys, or copyrighted content.
+- Do not commit original game files, extracted assets, or copyrighted content.
 - Keep source files unchanged; tools should operate read-only by default.
 - This is an independent research project and is not affiliated with WWE or 2K.
 
 ## License
 
-The code in this repository is licensed under the MIT License. See [LICENSE](LICENSE).
+The repository tools are licensed under the MIT License. See [LICENSE](LICENSE).
