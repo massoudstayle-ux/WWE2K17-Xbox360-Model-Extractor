@@ -42,12 +42,19 @@ jobs:
           }
           ls -lh "$PAC_FILE"
 
-      - name: Run read-only PAC probe
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Run read-only PAC probe and exploratory analyzer
         env:
           PAC_FILE: ${{ inputs.target_file || 'ch139.pac' }}
         run: |
           mkdir -p analysis-output
-          python tools/pac_probe.py "$PAC_FILE" | tee analysis-output/pac-report.txt
+          {
+            python tools/pac_probe.py "$PAC_FILE"
+            echo
+            python tools/pac_analyze.py "$PAC_FILE"
+          } | tee analysis-output/pac-report.txt
 
       - name: Upload analysis report
         uses: actions/upload-artifact@v4
