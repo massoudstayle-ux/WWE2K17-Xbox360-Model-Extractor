@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Decode and validate candidate JBOY skin-weight slots against each mesh palette.
 
-Observed Xbox 360 JBOY layout: each mesh has up to 21 global bone indices in
-its descriptor (+0x08..+0x58). Per-vertex weight slots store a little-endian
+Observed Xbox 360 JBOY layout: each mesh has up to 20 node indices plus one in
+its descriptor (+0x0C..+0x58), with the count at +0x08. Per-vertex weight slots store a little-endian
 palette-local index followed by a big-endian float32 weight. 0xFF is the
 unused-slot sentinel. This remains a researched format interpretation until
 the resulting rig is validated in a renderer.
