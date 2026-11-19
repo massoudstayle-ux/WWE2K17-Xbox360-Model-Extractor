@@ -301,18 +301,27 @@ jobs:
             echo "Texture extraction and material assignment are not claimed by this step."
           } | tee -a "$REPORT"
 
-      - name: Merge only skeleton-compatible hair and accessory FBXs
+      - name: Merge only matching wrestler and SHDC variant accessories
         if: always()
         run: |
           BLENDER="$(cat /tmp/blender-path.txt)"
           mkdir -p analysis-output/fbx-combined
+          shopt -s nullglob
           for body in analysis-output/fbx/*.fbx; do
             [ -f "$body" ] || continue
             name="$(basename "$body" .fbx)"
-            "$BLENDER" --background --python tools/merge_accessory_fbx.py -- "$body" "analysis-output/fbx-combined/$name-complete.fbx" analysis-output/fbx-accessories/*.fbx
+            wrestler="${name%%_SHDC*}"
+            variant="$(echo "$name" | sed -n 's/.*_SHDC\([01]\)_.*/\1/p')"
+            [ -n "$variant" ] || { echo "Cannot identify SHDC variant from $name" >&2; exit 1; }
+            accessories=(analysis-output/fbx-accessories/"${wrestler}_SHDC${variant}"_*.fbx)
+            args=()
+            for accessory in "${accessories[@]}"; do args+=("$accessory"); done
+            echo "Merging ${#args[@]} matching accessories into $name"
+            "$BLENDER" --background --python tools/merge_accessory_fbx.py -- "$body" "analysis-output/fbx-combined/$name-complete.fbx" "${args[@]}"
             test -s "analysis-output/fbx-combined/$name-complete.fbx" || { echo "Combined FBX missing or empty: $name" >&2; exit 1; }
           done
           ls -lh analysis-output/fbx-combined
+
 
       - name: Run read-only PAC probe and exploratory analyzer
         env:
