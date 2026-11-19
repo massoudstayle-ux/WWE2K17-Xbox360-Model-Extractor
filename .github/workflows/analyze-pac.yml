@@ -12,6 +12,7 @@ on:
       - 'tools/export_jboy_obj.py'
       - 'tools/extract_jboy_models.py'
       - 'tools/analyze_jboy_skinning.py'
+      - 'tools/validate_jboy_bone_hierarchy.py'
       - 'tests/test_decode_yuke_bpe.py'
       - 'tests/test_export_jboy_obj.py'
       - 'tools/parse_hspc.py'
@@ -125,6 +126,21 @@ jobs:
             [ -f "$file" ] || continue
             python tools/extract_jboy_models.py "$file" --output-dir analysis-output/extracted-models
           done
+
+      - name: Validate candidate bone hierarchy in model summaries
+        if: always()
+        run: |
+          mkdir -p analysis-output/bone-hierarchy
+          found=0
+          for file in analysis-output/extracted-models/*_summary.json; do
+            [ -f "$file" ] || continue
+            found=1
+            name="$(basename "$file" _summary.json)"
+            python tools/validate_jboy_bone_hierarchy.py "$file" --output "analysis-output/bone-hierarchy/$name-hierarchy.json"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No model summaries were available for hierarchy validation." | tee analysis-output/bone-hierarchy/NO-SUMMARIES.txt
+          fi
 
       - name: Validate JBOY skin-weight buffer spans
         if: always()
