@@ -13,7 +13,7 @@ LABELS = {
     "pelvis": (r"pelvis|hip",),
     "spine": (r"spine|torso|chest",),
     "neck": (r"\bneck\b",),
-    "head": (r"\bhead\b",),
+    "head": (r"(?:^|[^a-z0-9])head(?:$|[^a-z0-9])",),
     "left_arm": (r"left.*(arm|shoulder|hand)|l_(arm|shoulder|hand)|\barm_l\b",),
     "right_arm": (r"right.*(arm|shoulder|hand)|r_(arm|shoulder|hand)|\barm_r\b",),
     "left_leg": (r"left.*(leg|thigh|knee|foot)|l_(leg|thigh|knee|foot)|\bleg_l\b",),
