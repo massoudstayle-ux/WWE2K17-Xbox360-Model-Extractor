@@ -2,62 +2,65 @@
 
 ## Scope
 
-These notes concern the Xbox 360 edition of WWE 2K17 and user-supplied files (for example, wrestler files from a game's `ch` directory). The exact structure of the PAC file and its internal resources is not yet verified.
+These notes concern the Xbox 360 edition of WWE 2K17 and user-supplied files from the game's ch directory. The outer compression and nested HSPC/SHDC/BPE layout are now verified for ch120.pac and ch139.pac.
 
-## Observations to record
+## Observations and file handling
 
-For each test file, record:
-- file name and size
-- first 64–256 bytes (hex)
-- candidate signature / magic
-- offsets and values only when repeatable
-- whether the test was performed on a copy
-- tool name, version, command, and result
+For each test, record the file name and size, signatures, offsets, validation method, and tool result. Never overwrite source PAC files. Keep test input outside this repository. Do not upload game assets.
 
-## Hypotheses (not confirmed)
+## Exploratory analyzer
 
-PAC may be a container, a compressed container, or a wrapper around another resource format. Header bytes alone are not sufficient to identify the format. Do not label data as encrypted/compressed without supporting tests.
-
-## Next investigation
-
-1. Compare headers of several PAC files from the same folder.
-2. Compare sizes and any repeated byte patterns.
-3. Search for plausible directory tables and offsets, validating that every candidate offset lies within the file.
-4. Identify compression only by testing known algorithms against structurally plausible regions and checking output signatures/consistency.
-5. Once a nested format is identified, document it and build a parser with bounds checks and test fixtures that contain no copyrighted game data.
-
-## File handling
-
-Never overwrite source PAC files. Keep test input outside this repository. Do not upload game assets.
-
-
-## Exploratory analyzer additions
-
-The read-only `tools/pac_analyze.py` now reports fixed-window entropy, common embedded signatures, printable ASCII strings, and plausible in-range 32-bit values in both byte orders from the first 256 bytes. Each is a candidate observation, not a confirmed format field.
-
-Automated unit tests cover entropy edge cases, string offsets, signature detection, and bounds filtering. No extraction or decompression is implemented yet.
-
+The read-only tools/pac_analyze.py reports fixed-window entropy, common embedded signatures, printable ASCII strings, and plausible in-range 32-bit values in both byte orders from the first 256 bytes. These are candidate observations, not confirmed fields. Automated unit tests cover entropy edge cases, string offsets, signature detection, and bounds filtering.
 
 ## Confirmed outer compression signature (2026-11-19)
 
-Both uploaded samples begin with bytes `0F F5 12 ED`. This is identified in QuickBMS community documentation as Xbox 360 `XCOMPRESS_FILE_IDENTIFIER_LZXTDECODE`, associated with `XMemDecompressSegmentTD` rather than ordinary GZIP or the separate LZXNATIVE signature `0F F5 12 EE`.
+Both samples begin with bytes 0F F5 12 ED. This is the Xbox 360 XCOMPRESS_FILE_IDENTIFIER_LZXTDECODE signature associated with XMemDecompressSegmentTD, not ordinary GZIP or the separate LZXNATIVE signature 0F F5 12 EE.
 
-References:
-- QuickBMS XCompress file script is listed by the author's script index as supporting `0x0FF512ED`, `XMemDecompress`, and `0x0FF512EE`.
-- The QuickBMS author explains that the ED variant requires the segment decode path and can be handled by QuickBMS / xbdecompress.
+The first QuickBMS attempt was blocked before decoding because the script archive URL returned HTTP 404. This was a tooling/download failure, not evidence that either PAC was invalid.
 
-The workflow now downloads the official QuickBMS Linux package and official script collection at run time, attempts decompression into `analysis-output/decompressed/`, and records the exit code and output signatures. Original PAC files remain read-only. A successful process exit alone will not be treated as proof of a valid model; the output's magic and internal structure must be checked next.
+## XMem TD decompression (2026-11-19)
 
+The workflow builds PopGameTool/XMemCompression from source on a Windows GitHub Actions runner because its C++ sources require windows.h. The implementation is compatibility-oriented reverse engineering, not an official Microsoft decoder.
 
-## XMem TD decompression implementation (2026-11-19)
+The successful run completed with exit code 0 for both samples:
+- ch120.decompressed.bin: 8,521,728 bytes
+- ch139.decompressed.bin: 8,798,208 bytes
 
-The first QuickBMS workflow attempt failed before decoding: the mirror's `quickbms_scripts.zip` URL returned HTTP 404. QuickBMS itself downloaded, but no PAC was passed to a decoder. This was a tooling/download failure, not evidence that either PAC is invalid.
+Both outputs begin with HSPC. The source PAC files remain unchanged.
 
-The workflow now builds `PopGameTool/XMemCompression` from its public source and runs its CLI in decompression mode against copies of `ch120.pac` and `ch139.pac`. That repository documents support for whole-file XMem LZX TD streams beginning with `0F F5 12 ED`. Its implementation is compatibility-oriented reverse engineering, not an official Microsoft decoder. Results must be validated by exit status, output size, output magic, and subsequent container parsing; a generated file alone does not prove successful extraction.
+## Confirmed nested container layout and first model extraction (2026-11-19)
 
-All decoded outputs go under `analysis-output/decompressed/`; source PAC files are read-only. If the decoder rejects a file, the next task is to compare its 16-byte header/segment table assumptions with the actual bytes and seek a second independent decoder.
+The decompressed files are HSPC containers. Each HSPC contains two child SHDC containers. The fields validated against both files are:
 
+- HSPC file count: little-endian u32 at 0x38.
+- HSPC filename table: starts at 0x800; records are 0x14 bytes (8-byte hashed name followed by padding).
+- HSPC data table: FileNameLength - (FileNameLength % 0x800) + 0x1000. Each record is 12 bytes (sector, size), with data offset sector * 0x800 and stored length size * 0x100.
+- SHDC mode 1: information table offset at 0x1C and byte length at 0x20; records are 16 bytes (id, offset, length).
 
-### Decoder build environment adjustment
+Each SHDC contains BPE-compressed resources. The BPE header is BPE-space, version 0x100, packed size at +0x08, and unpacked size at +0x0C. The published Yuke BPE routine (Luigi Auriemma's yuke_bpe reverse-engineering implementation) was validated against all extracted entries; decoded sizes match their declared sizes.
 
-The first Linux build of the compatibility decoder failed because its C++ sources include the Windows SDK header `windows.h`; it is not currently a portable Linux build despite the top-level CMake project. The workflow was moved to a Windows GitHub Actions runner (with Bash shell for the existing scripts) so the source can compile against the native Windows SDK and execute there. No PAC decode result is available yet.
+The BPE entry ID 0000 decodes to JBOY, a Yuke character-model format. Additional JBOY entries were found at IDs 2710, 271A, and 4E22 in some SHDC children; ID 006E decodes to YANM; several small entries decode to DUMY.
+
+The JBOY main header uses big-endian values. Confirmed root fields include:
+- sub-object count at 0x18
+- sub-object header table offset at 0x1C (add 8)
+- bone count at 0x20
+- texture count at 0x24
+- bone data offset at 0x28
+- texture reference offset at 0x2C
+- shader data offset at 0x30
+- shader count at 0x34
+
+A geometry-only OBJ exporter was tested against all main JBOY entries in these samples. For the two ch139 main JBOY variants it exported:
+- 10,395 vertices / 15,069 triangles
+- 9,575 vertices / 14,373 triangles
+
+Both exports had zero out-of-range triangles. A visual preview confirms a recognizable wrestler-shaped mesh in a T-pose.
+
+Important limitations: OBJ contains geometry and UV coordinates only. Skeleton hierarchy, skin weights, DDS texture resources, material assignments, and FBX export are not yet complete. The model is therefore not yet ready for animation in Godot. The original PAC files were not modified.
+
+## Reference implementations and format research
+
+- pozzum/WrestleMINUS identifies HSPC, SHDC, BPE, and JBOY, and contains JBOY model parsing.
+- WrestleMINUS ModelView.vb documents JBOY sub-object vertex, UV, and triangle-strip parsing.
+- Luigi Auriemma's Yuke BPE routine is reproduced in the Legends of Modding discussion on BPE compression alternatives.
