@@ -29,3 +29,10 @@ PAC may be a container, a compressed container, or a wrapper around another reso
 ## File handling
 
 Never overwrite source PAC files. Keep test input outside this repository. Do not upload game assets.
+
+
+## Exploratory analyzer additions
+
+The read-only `tools/pac_analyze.py` now reports fixed-window entropy, common embedded signatures, printable ASCII strings, and plausible in-range 32-bit values in both byte orders from the first 256 bytes. Each is a candidate observation, not a confirmed format field.
+
+Automated unit tests cover entropy edge cases, string offsets, signature detection, and bounds filtering. No extraction or decompression is implemented yet.
