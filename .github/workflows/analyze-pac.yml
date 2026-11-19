@@ -7,6 +7,8 @@ on:
       - 'ch139.pac'
       - 'tools/pac_probe.py'
       - 'tools/pac_analyze.py'
+      - 'tools/inspect_xcompress.py'
+      - 'docs/**'
       - 'tests/**'
       - '.github/workflows/analyze-pac.yml'
   workflow_dispatch:
@@ -49,6 +51,53 @@ jobs:
           test -s analysis-targets.txt || { echo "No target PAC files found"; exit 1; }
           while IFS= read -r file; do ls -lh "$file"; done < analysis-targets.txt
 
+      - name: Install QuickBMS and official XCompress script
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip libc6-i386
+          mkdir -p .quickbms analysis-output/decompressed
+          curl -fL --retry 3 https://mirror.aluigi.org/papers/quickbms_linux.zip -o /tmp/quickbms_linux.zip
+          curl -fL --retry 3 https://mirror.aluigi.org/quickbms_scripts.zip -o /tmp/quickbms_scripts.zip
+          unzip -q /tmp/quickbms_linux.zip -d .quickbms
+          unzip -q /tmp/quickbms_scripts.zip -d .quickbms/scripts
+          QUICKBMS="$(find .quickbms -type f \( -name quickbms -o -name quickbms_4gb_files \) | head -n 1)"
+          XCOMPRESS_SCRIPT="$(find .quickbms/scripts -type f -iname xcompress_file.bms | head -n 1)"
+          test -n "$QUICKBMS" || { echo "QuickBMS executable not found in official archive"; exit 1; }
+          test -n "$XCOMPRESS_SCRIPT" || { echo "xcompress_file.bms not found in official script archive"; exit 1; }
+          chmod +x "$QUICKBMS"
+          echo "$QUICKBMS" > .quickbms/executable-path.txt
+          echo "$XCOMPRESS_SCRIPT" > .quickbms/xcompress-script-path.txt
+          "$QUICKBMS" -h | head -n 8 || true
+
+      - name: Attempt XCompress LZXTDECODE decompression
+        run: |
+          QUICKBMS="$(cat .quickbms/executable-path.txt)"
+          XCOMPRESS_SCRIPT="$(cat .quickbms/xcompress-script-path.txt)"
+          while IFS= read -r PAC_FILE; do
+            MAGIC="$(od -An -tx1 -N4 "$PAC_FILE" | tr -d ' \n')"
+            OUT="analysis-output/decompressed/$(basename "$PAC_FILE" .pac)"
+            mkdir -p "$OUT"
+            echo "=== $PAC_FILE magic=$MAGIC ===" | tee -a analysis-output/xcompress-report.txt
+            if [ "$MAGIC" = "0ff512ed" ]; then
+              set +e
+              timeout 180 "$QUICKBMS" -o "$XCOMPRESS_SCRIPT" "$PAC_FILE" "$OUT" 2>&1 | tee -a analysis-output/xcompress-report.txt
+              RC=${PIPESTATUS[0]}
+              set -e
+              echo "QuickBMS exit code: $RC" | tee -a analysis-output/xcompress-report.txt
+              find "$OUT" -type f -printf '%p %s bytes\n' | tee -a analysis-output/xcompress-report.txt
+            else
+              echo "Skipped: input does not have LZXTDECODE magic" | tee -a analysis-output/xcompress-report.txt
+            fi
+          done < analysis-targets.txt
+          python - <<'PY'
+          from pathlib import Path
+          for p in sorted(Path("analysis-output/decompressed").rglob("*")):
+              if p.is_file():
+                  with p.open("rb") as f:
+                      head = f.read(32)
+                  print(f"{p}: size={p.stat().st_size}, first32={head.hex(' ').upper()}")
+          PY
+
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
@@ -73,6 +122,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ch120-ch139-pac-comparison
-          path: analysis-output/pac-report.txt
+          path: analysis-output/
           if-no-files-found: error
           retention-days: 14
