@@ -70,12 +70,13 @@ Important limitations: OBJ contains geometry and UV coordinates only. Skeleton h
 
 The JBOY exporter now exposes the known 0x50-byte bone-record fields as analysis candidates:
 - local position candidate: four big-endian floats at bone record + 0x10
-- local Euler rotation candidate: three big-endian floats at +0x20
-- parent index candidate: big-endian u32 at +0x30 (0xFFFFFFFF is represented as no parent)
-- global position candidate: three big-endian floats at +0x40
-- additional float at +0x4C
+- local translation: three big-endian floats at +0x10 (fourth float retained as a raw candidate)
+- local Euler rotation: three big-endian floats at +0x1C
+- node metadata words: big-endian u32 at +0x28 and +0x2C
+- parent index: big-endian u32 at +0x30 (0xFFFFFFFF is represented as no parent)
+- bounding sphere candidate: four big-endian floats at +0x40
 
-The older `unknown_0x30` and `translation_candidate` keys are retained for report compatibility. The JBOY node-record layout is cross-checked against the published Yuke format notes: nodes are 0x50 bytes; translation is at +0x10, Euler rotation at +0x20 (R = Rz Ry Rx), and parent index at +0x30 (-1 = root). The game uses 1 unit = 10 cm and -Y up. The numeric transforms still need a visual bind-pose check in a renderer before they are used to build inverse-bind matrices.
+The +0x40 block is a bounding-sphere candidate, not a global position. The rotation begins at +0x1C, not +0x20. This field layout agrees with the published Yuke 0x50-byte node-record description. The transform order, coordinate conversion, and inverse-bind construction still need visual validation on these WWE 2K17 Xbox 360 samples before production FBX export.
 
 The current CI export remains OBJ + JSON + raw decoded JBOY. It does not produce FBX yet. The skinning analyzer now resolves palette-local indices and validates weight sums, but the geometry exporter still needs to combine vertex data, node hierarchy, bind transforms, and skin weights into a rigged interchange file. Do not treat the OBJ preview as a rigged character.
 
@@ -94,14 +95,15 @@ Validation results:
 - ch139 SHDC0: 26/26 mesh spans match.
 - ch139 SHDC1: 20/20 mesh spans match.
 
-This confirms the per-mesh weight-buffer size and 8-byte slot stride for these 75 meshes. The layout is now decoded using the published JBOY structure: the descriptor stores a palette count at +0x08, followed by up to 20 big-endian node-index-plus-one values at +0x0C. Each 8-byte influence record stores a palette-local index in its first four bytes (observed as a little-endian integer with the upper three bytes zero) and a big-endian float32 weight; 0xFF marks an unused influence. The palette value is reduced by one to obtain the node index.
+This confirms the per-mesh weight-buffer size and 8-byte slot stride for these 75 meshes. The layout is now decoded using the published JBOY structure: the descriptor stores a palette count at +0x08, followed by up to 20 big-endian node-index-plus-one values at +0x0C. Each 8-byte influence record stores the palette-local index in its first byte, three zero padding bytes, and a big-endian float32 weight; 0xFF marks an unused influence. The palette stores node-index-plus-one values, so the palette value is reduced by one to obtain the node index. Slots are vertex-major (all weight blocks for vertex 0, then vertex 1, etc.); this ordering is supported by the per-vertex weights summing to 1.0 across the supplied samples.
 
 Validation against all four 109-node main models:
 - 75/75 mesh weight spans match the expected size.
 - 38,230 vertices checked.
 - 91,390 active influence records decoded.
 - 40,299 unused influence slots identified.
+- Zero nonzero padding bytes in influence records.
 - Zero palette-index errors, zero invalid weights, and zero vertices with active weights outside 1.0 ± 0.02.
 - Each model uses 101 of its 109 skeleton nodes in the mesh palettes.
 
-The hierarchy candidate checks also found no out-of-range parent references or cycles in the four main models. These checks validate the binary mapping and normalized weights, not the final visual deformation. The node transforms and inverse-bind matrices still need a renderer/Godot validation pass before a production FBX export. Reference: https://github.com/KaikoClanworth1/wwe-svr2011-pc/blob/main/docs/SVRMOD_FORMAT.md
+The hierarchy candidate checks also found no out-of-range parent references or cycles in the four main models. The node transform parser was corrected in this pass: Euler rotation is read from +0x1C and +0x40 is treated as a bounding-sphere candidate, not a global position. These checks validate the binary mapping and normalized weights, not the final visual deformation. Node rotation order, coordinate conversion, bind pose and inverse-bind matrices still need a renderer/Godot validation pass before a production FBX export. Reference: https://github.com/KaikoClanworth1/wwe-svr2011-pc/blob/main/docs/SVRMOD_FORMAT.md
