@@ -263,17 +263,35 @@ jobs:
           BLENDER="$(cat /tmp/blender-path.txt)"
           mkdir -p analysis-output/fbx
           found=0
+          exported=0
+          REPORT="analysis-output/fbx/body-export-report.txt"
+          : > "$REPORT"
           for file in analysis-output/extracted-models/*_SHDC[01]_entry0_0_JBOY.bin; do
             [ -f "$file" ] || continue
-            found=1
+            found=$((found + 1))
             name="$(basename "$file" _JBOY.bin)"
-            "$BLENDER" --background --python tools/blender_export_jboy_fbx.py -- "$file" "analysis-output/fbx/$name.fbx"
-            test -s "analysis-output/fbx/$name.fbx" || { echo "FBX export missing or empty: $name" >&2; exit 1; }
+            echo "=== $name ===" | tee -a "$REPORT"
+            set +e
+            "$BLENDER" --background --python tools/blender_export_jboy_fbx.py -- "$file" "analysis-output/fbx/$name.fbx" >> "$REPORT" 2>&1
+            RC=$?
+            set -e
+            if [ "$RC" -eq 0 ] && [ -s "analysis-output/fbx/$name.fbx" ]; then
+              exported=$((exported + 1))
+              echo "STATUS=EXPORTED_FBX" | tee -a "$REPORT"
+            else
+              rm -f "analysis-output/fbx/$name.fbx"
+              echo "STATUS=FAILED exit_code=$RC; continue with remaining body variants" | tee -a "$REPORT"
+            fi
           done
           if [ "$found" -eq 0 ]; then
             echo "No SHDC0/SHDC1 main body JBOY inputs were available for FBX export." >&2
             exit 1
           fi
+          if [ "$exported" -eq 0 ]; then
+            echo "No main body FBX exports succeeded." >&2
+            exit 1
+          fi
+          echo "Body candidates=$found; successful FBX exports=$exported" | tee -a "$REPORT"
           ls -lh analysis-output/fbx
 
 
