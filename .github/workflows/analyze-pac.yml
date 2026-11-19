@@ -51,52 +51,35 @@ jobs:
           test -s analysis-targets.txt || { echo "No target PAC files found"; exit 1; }
           while IFS= read -r file; do ls -lh "$file"; done < analysis-targets.txt
 
-      - name: Install QuickBMS and official XCompress script
+      - name: Build XMemCompression TD decoder
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip libc6-i386
-          mkdir -p .quickbms analysis-output/decompressed
-          curl -fL --retry 3 https://mirror.aluigi.org/papers/quickbms_linux.zip -o /tmp/quickbms_linux.zip
-          curl -fL --retry 3 https://mirror.aluigi.org/quickbms_scripts.zip -o /tmp/quickbms_scripts.zip
-          unzip -q /tmp/quickbms_linux.zip -d .quickbms
-          unzip -q /tmp/quickbms_scripts.zip -d .quickbms/scripts
-          QUICKBMS="$(find .quickbms -type f \( -name quickbms -o -name quickbms_4gb_files \) | head -n 1)"
-          XCOMPRESS_SCRIPT="$(find .quickbms/scripts -type f -iname xcompress_file.bms | head -n 1)"
-          test -n "$QUICKBMS" || { echo "QuickBMS executable not found in official archive"; exit 1; }
-          test -n "$XCOMPRESS_SCRIPT" || { echo "xcompress_file.bms not found in official script archive"; exit 1; }
-          chmod +x "$QUICKBMS"
-          echo "$QUICKBMS" > .quickbms/executable-path.txt
-          echo "$XCOMPRESS_SCRIPT" > .quickbms/xcompress-script-path.txt
-          "$QUICKBMS" -h | head -n 8 || true
+          git clone --depth 1 https://github.com/PopGameTool/XMemCompression.git /tmp/XMemCompression
+          cmake -S /tmp/XMemCompression -B /tmp/XMemCompression/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/XMemCompression/build --parallel 2
+          DECODER="$(find /tmp/XMemCompression/build -type f -name XMemCompression -perm -111 | head -n 1)"
+          test -n "$DECODER" || { echo "XMemCompression executable not found after build"; exit 1; }
+          echo "$DECODER" > /tmp/xmem-decoder-path.txt
+          "$DECODER" 2>&1 | head -n 12 || true
 
-      - name: Attempt XCompress LZXTDECODE decompression
+      - name: Attempt XMem LZX TD decompression
         run: |
-          QUICKBMS="$(cat .quickbms/executable-path.txt)"
-          XCOMPRESS_SCRIPT="$(cat .quickbms/xcompress-script-path.txt)"
+          DECODER="$(cat /tmp/xmem-decoder-path.txt)"
+          mkdir -p analysis-output/decompressed
           while IFS= read -r PAC_FILE; do
-            MAGIC="$(od -An -tx1 -N4 "$PAC_FILE" | tr -d ' \n')"
-            OUT="analysis-output/decompressed/$(basename "$PAC_FILE" .pac)"
-            mkdir -p "$OUT"
-            echo "=== $PAC_FILE magic=$MAGIC ===" | tee -a analysis-output/xcompress-report.txt
-            if [ "$MAGIC" = "0ff512ed" ]; then
-              set +e
-              timeout 180 "$QUICKBMS" -o "$XCOMPRESS_SCRIPT" "$PAC_FILE" "$OUT" 2>&1 | tee -a analysis-output/xcompress-report.txt
-              RC=${PIPESTATUS[0]}
-              set -e
-              echo "QuickBMS exit code: $RC" | tee -a analysis-output/xcompress-report.txt
-              find "$OUT" -type f -printf '%p %s bytes\n' | tee -a analysis-output/xcompress-report.txt
+            OUT="analysis-output/decompressed/$(basename "$PAC_FILE" .pac).decompressed.bin"
+            echo "=== $PAC_FILE ===" | tee -a analysis-output/xmem-report.txt
+            set +e
+            timeout 180 "$DECODER" --decompress "$PAC_FILE" "$OUT" 2>&1 | tee -a analysis-output/xmem-report.txt
+            RC=${PIPESTATUS[0]}
+            set -e
+            echo "Decoder exit code: $RC" | tee -a analysis-output/xmem-report.txt
+            if [ -f "$OUT" ]; then
+              ls -lh "$OUT" | tee -a analysis-output/xmem-report.txt
+              od -An -tx1 -N32 "$OUT" | tee -a analysis-output/xmem-report.txt
             else
-              echo "Skipped: input does not have LZXTDECODE magic" | tee -a analysis-output/xcompress-report.txt
+              echo "No output file created" | tee -a analysis-output/xmem-report.txt
             fi
           done < analysis-targets.txt
-          python - <<'PY'
-          from pathlib import Path
-          for p in sorted(Path("analysis-output/decompressed").rglob("*")):
-              if p.is_file():
-                  with p.open("rb") as f:
-                      head = f.read(32)
-                  print(f"{p}: size={p.stat().st_size}, first32={head.hex(' ').upper()}")
-          PY
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
