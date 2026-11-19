@@ -14,6 +14,8 @@ on:
       - 'tools/analyze_jboy_skinning.py'
       - 'tools/validate_jboy_bone_hierarchy.py'
       - 'tools/inspect_jboy_bone_fields.py'
+      - 'tools/map_jboy_bones.py'
+      - 'tests/test_map_jboy_bones.py'
       - 'tests/test_inspect_jboy_bone_fields.py'
       - 'tests/test_decode_yuke_bpe.py'
       - 'tests/test_export_jboy_obj.py'
@@ -157,6 +159,21 @@ jobs:
           done
           if [ "$found" -eq 0 ]; then
             echo "No decoded JBOY files available for raw bone-field inspection." | tee analysis-output/bone-fields/NO-JBOY-INPUT.txt
+          fi
+
+      - name: Build heuristic bone-name map from model summaries
+        if: always()
+        run: |
+          mkdir -p analysis-output/bone-map
+          found=0
+          for file in analysis-output/extracted-models/*_summary.json; do
+            [ -f "$file" ] || continue
+            found=1
+            name="$(basename "$file" _summary.json)"
+            python tools/map_jboy_bones.py "$file" --output "analysis-output/bone-map/$name-bone-map.json"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No model summaries available for heuristic bone mapping." | tee analysis-output/bone-map/NO-SUMMARIES.txt
           fi
 
       - name: Validate JBOY skin-weight buffer spans
