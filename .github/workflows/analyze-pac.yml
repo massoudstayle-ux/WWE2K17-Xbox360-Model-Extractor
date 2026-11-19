@@ -12,6 +12,7 @@ on:
       - 'tools/export_jboy_obj.py'
       - 'tools/extract_jboy_models.py'
       - 'tools/analyze_jboy_skinning.py'
+      - 'tools/blender_export_jboy_fbx.py'
       - 'tools/validate_jboy_bone_hierarchy.py'
       - 'tools/inspect_jboy_bone_fields.py'
       - 'tools/map_jboy_bones.py'
@@ -207,6 +208,32 @@ jobs:
           if [ "$found" -eq 0 ]; then
             echo "No decoded JBOY files were available for skin-weight validation." | tee analysis-output/skinning/NO-JBOY-INPUT.txt
           fi
+
+      - name: Install Blender for rigged FBX export
+        if: always()
+        run: |
+          choco install blender --yes --no-progress
+          BLENDER="$(find '/c/Program Files/Blender Foundation' -type f -iname blender.exe | head -n 1)"
+          test -n "$BLENDER" || { echo "Blender executable not found"; exit 1; }
+          echo "$BLENDER" > /tmp/blender-path.txt
+
+      - name: Export main wrestler bodies to rigged FBX
+        if: always()
+        run: |
+          BLENDER="$(cat /tmp/blender-path.txt)"
+          mkdir -p analysis-output/fbx
+          found=0
+          for file in analysis-output/extracted-models/*_SHDC0_entry0_0_JBOY.bin; do
+            [ -f "$file" ] || continue
+            found=1
+            name="$(basename "$file" _JBOY.bin)"
+            "$BLENDER" --background --python tools/blender_export_jboy_fbx.py -- "$file" "analysis-output/fbx/$name.fbx"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No main body JBOY inputs were available for FBX export." >&2
+            exit 1
+          fi
+          ls -lh analysis-output/fbx
 
       - name: Run read-only PAC probe and exploratory analyzer
         env:
