@@ -213,8 +213,11 @@ jobs:
         if: always()
         run: |
           choco install blender --yes --no-progress
-          BLENDER="$(find '/c/Program Files/Blender Foundation' -type f -iname blender.exe | head -n 1)"
-          test -n "$BLENDER" || { echo "Blender executable not found"; exit 1; }
+          BLENDER="$(where.exe blender 2>/dev/null | head -n 1 | tr -d '\r' || true)"
+          if [ -z "$BLENDER" ]; then
+            BLENDER="$(find '/c/Program Files/Blender Foundation' '/c/ProgramData/chocolatey/lib/blender' -type f -iname blender.exe 2>/dev/null | head -n 1)"
+          fi
+          test -n "$BLENDER" || { echo "Blender executable not found after Chocolatey install"; exit 1; }
           echo "$BLENDER" > /tmp/blender-path.txt
 
       - name: Export main wrestler bodies to rigged FBX
