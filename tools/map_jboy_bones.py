@@ -42,7 +42,7 @@ def inspect(summary):
             "name_based_labels": classify(bone.get("name", "")),
             "parent_index_candidate": parent,
             "parent_candidate_valid": valid,
-            "raw_fields": bone.get("fields", bone.get("raw_fields", None)),
+            "candidate_transform_fields": {"local_position_candidate": bone.get("local_position_candidate"), "local_rotation_euler_radians_candidate": bone.get("local_rotation_euler_radians_candidate"), "global_position_candidate": bone.get("global_position_candidate"), "translation_candidate": bone.get("translation_candidate"), "unknown_float_0x4C": bone.get("unknown_float_0x4C")},
         })
     label_groups = {}
     for b in mapped:
@@ -52,7 +52,7 @@ def inspect(summary):
         "bone_count": n,
         "name_based_label_groups": label_groups,
         "bones": mapped,
-        "invalid_parent_candidates": parent_errors,
+        "invalid_parent_candidates": parent_errors, "transform_field_coverage": {"bones_with_local_position_candidate": sum(b.get("local_position_candidate") is not None for b in bones), "bones_with_local_rotation_candidate": sum(b.get("local_rotation_euler_radians_candidate") is not None for b in bones), "bones_with_global_position_candidate": sum(b.get("global_position_candidate") is not None for b in bones), "bones_with_translation_candidate": sum(b.get("translation_candidate") is not None for b in bones)},
         "interpretation_warning": "Labels are inferred from names only. Parent and transform candidates remain unverified; this is not an FBX skeleton map."
     }
 
