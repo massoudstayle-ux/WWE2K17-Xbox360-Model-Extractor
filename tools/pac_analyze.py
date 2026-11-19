@@ -126,6 +126,14 @@ def main() -> int:
     else:
         print("  none found")
 
+    print("\nValidated GZIP members (actual decompression check, max output 32 MiB each):")
+    gzip_members = valid_gzip_members(whole)
+    if gzip_members:
+        for offset, compressed_size, output_size, prefix in gzip_members:
+            print(f"  0x{offset:08X}: compressed={compressed_size} bytes, output={output_size} bytes, output_prefix={prefix.hex(' ').upper()}")
+    else:
+        print("  none validated")
+
     print("\nPrintable ASCII strings (offset, text):")
     strings = printable_strings(whole)
     for offset, value in strings[:args.max_strings]:
