@@ -16,6 +16,8 @@ on:
       - 'tools/analyze_jboy_skinning.py'
       - 'tools/blender_export_jboy_fbx.py'
       - 'tools/merge_accessory_fbx.py'
+      - 'tools/render_fbx_previews.py'
+      - '.github/workflows/render-existing-fbx.yml'
       - 'tools/validate_jboy_bone_hierarchy.py'
       - 'tools/inspect_jboy_bone_fields.py'
       - 'tools/map_jboy_bones.py'
