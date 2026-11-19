@@ -13,7 +13,8 @@ Research tools for inspecting **user-provided WWE 2K17 Xbox 360 files** and inve
 - [x] 109-node hierarchy and skin-weight structure analysis
 - [x] Add a first rigged FBX export stage for SHDC0/SHDC1 main-body JBOY resources
 - [ ] Run and inspect the latest FBX export artifact; verify bone transforms, bind pose, and deformation in Godot
-- [ ] Identify and merge separate hair, eyelashes, clothing, and accessory resources onto the shared skeleton
+- [ ] Match accessory bone hierarchies to the body skeleton and merge compatible meshes
+- [ ] Decode texture resources, identify image formats, and assign skin, hair, and clothing materials
 
 ## Planned tools
 
