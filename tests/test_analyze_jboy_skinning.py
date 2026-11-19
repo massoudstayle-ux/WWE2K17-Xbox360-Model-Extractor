@@ -4,7 +4,7 @@ import unittest
 from tools.analyze_jboy_skinning import FormatError, inspect
 
 
-def make_jboy(local_indices=(0, 1), weights=(0.75, 0.25), palette=(2, 0)):
+def make_jboy(local_indices=(0, 1), weights=(0.75, 0.25), palette=(3, 1)):
     data = bytearray(0x400)
     data[:4] = b"JBOY"
     struct.pack_into(">I", data, 0x18, 1)       # one mesh
@@ -46,7 +46,7 @@ class SkinningPaletteTests(unittest.TestCase):
 
     def test_rejects_palette_bone_outside_model(self):
         with self.assertRaises(FormatError):
-            inspect(make_jboy(palette=(3, 0)))
+            inspect(make_jboy(palette=(4, 1)))
 
 
 if __name__ == "__main__":
