@@ -98,12 +98,16 @@ def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
             active = 0
             for slot in range(weight_blocks):
                 off = weight_ptr + (vertex * weight_blocks + slot) * 8
-                local_index = struct.unpack_from("<I", data, off)[0]
+                bone_bytes = data[off:off + 4]
+                local_index = bone_bytes[0]
+                padding_is_zero = bone_bytes[1:] == bytes(3)
                 weight = struct.unpack_from(">f", data, off + 4)[0]
                 sentinel = local_index == 0xFF
                 global_index = None
                 if sentinel:
                     mesh_sentinels += 1
+                elif not padding_is_zero:
+                    mesh_bad_weights += 1
                 elif local_index >= len(palette):
                     mesh_bad_palette += 1
                 elif not math.isfinite(weight) or not 0.0 <= weight <= 1.0:
@@ -119,7 +123,8 @@ def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
                         "slot": slot, "palette_local_index": local_index,
                         "global_bone_index": global_index,
                         "weight": weight if math.isfinite(weight) else None,
-                        "sentinel": sentinel, "raw_hex": data[off:off+8].hex()
+                        "sentinel": sentinel, "bone_index_padding_zero": padding_is_zero,
+                        "raw_hex": data[off:off+8].hex()
                     })
             if active:
                 vertex_sums.append(total)
@@ -173,10 +178,11 @@ def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
         "global_bone_indices_used": sorted(global_bones_used),
         "candidate_encoding": {
             "mesh_palette": "count at descriptor +0x08, followed by that many big-endian uint32 node indices plus one from +0x0C (maximum 20)",
-            "slot_index": "little-endian uint32 palette-local index",
+            "slot_index": "first byte is palette-local index; remaining three bytes are zero padding",
             "weight": "big-endian float32",
             "sentinel_index": 255,
-            "validation": "local indices resolve through each mesh palette; active weights sum to 1 within tolerance"
+            "storage_order": "vertex-major, then weight-block index (confirmed by normalized per-vertex sums on ch120/ch139)",
+            "validation": "local indices resolve through each mesh palette; padding is zero; active weights sum to 1 within tolerance"
         },
         "all_checks_passed": ok,
         "interpretation_warning": (
