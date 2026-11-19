@@ -42,7 +42,7 @@ def main():
         "decoded_image_count":len(thumbs),
         "records":records,
         "warning":"Visual previews only. Material-to-mesh assignments are not inferred by this audit."
-    },indent=2)+"\\n",encoding="utf-8")
+    },indent=2)+"\n",encoding="utf-8")
     print(f"DDS candidates={len(files)}; images decoded={len(thumbs)}; contact sheet={args.output_dir/'dds-contact-sheet.jpg'}")
 if __name__=="__main__":
     main()
