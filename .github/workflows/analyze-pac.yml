@@ -220,20 +220,21 @@ jobs:
           test -n "$BLENDER" || { echo "Blender executable not found after Chocolatey install"; exit 1; }
           echo "$BLENDER" > /tmp/blender-path.txt
 
-      - name: Export main wrestler bodies to rigged FBX
+      - name: Export both SHDC body variants to rigged FBX
         if: always()
         run: |
           BLENDER="$(cat /tmp/blender-path.txt)"
           mkdir -p analysis-output/fbx
           found=0
-          for file in analysis-output/extracted-models/*_SHDC0_entry0_0_JBOY.bin; do
+          for file in analysis-output/extracted-models/*_SHDC[01]_entry0_0_JBOY.bin; do
             [ -f "$file" ] || continue
             found=1
             name="$(basename "$file" _JBOY.bin)"
             "$BLENDER" --background --python tools/blender_export_jboy_fbx.py -- "$file" "analysis-output/fbx/$name.fbx"
+            test -s "analysis-output/fbx/$name.fbx" || { echo "FBX export missing or empty: $name" >&2; exit 1; }
           done
           if [ "$found" -eq 0 ]; then
-            echo "No main body JBOY inputs were available for FBX export." >&2
+            echo "No SHDC0/SHDC1 main body JBOY inputs were available for FBX export." >&2
             exit 1
           fi
           ls -lh analysis-output/fbx
