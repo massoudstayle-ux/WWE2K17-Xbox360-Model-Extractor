@@ -11,8 +11,9 @@ Research tools for inspecting **user-provided WWE 2K17 Xbox 360 files** and inve
 - [x] XMem TD decompression and HSPC/SHDC/BPE resource extraction
 - [x] JBOY geometry extraction to OBJ
 - [x] 109-node hierarchy and skin-weight structure analysis
-- [ ] Verify node transforms and inverse-bind matrices in a renderer
-- [ ] Rigged GLB/FBX export and visual validation in Godot
+- [x] Add a first rigged FBX export stage for SHDC0/SHDC1 main-body JBOY resources
+- [ ] Run and inspect the latest FBX export artifact; verify bone transforms, bind pose, and deformation in Godot
+- [ ] Identify and merge separate hair, eyelashes, clothing, and accessory resources onto the shared skeleton
 
 ## Planned tools
 
@@ -26,7 +27,7 @@ Record verified observations and test results in `docs/format-notes.md`. Unknown
 
 ### 3. Model conversion
 
-Static OBJ geometry is exported. The repository also validates mesh palettes, per-vertex influence records, and candidate node hierarchy. Rigged GLB/FBX export is still in progress; current OBJ previews are not animated characters.
+Static OBJ geometry is exported. The repository validates mesh palettes, per-vertex influence records, and candidate node hierarchy. A first Blender-based rigged FBX export stage now targets the main-body JBOY resources in both SHDC0 and SHDC1 variants. This exporter is still a prototype: its transforms and deformation must be visually validated in Godot, and separate hair, eyelashes, clothing, and accessory resources have not yet been merged. Do not treat the FBX export step as a visually verified complete wrestler until that validation is finished.
 
 ## Usage
 
