@@ -15,8 +15,9 @@ import struct
 from pathlib import Path
 
 RECORD_SIZE = 0xB8
-PALETTE_OFFSET = 0x08
-PALETTE_SLOTS = 21
+PALETTE_COUNT_OFFSET = 0x08
+PALETTE_OFFSET = 0x0C
+PALETTE_SLOTS = 20
 
 class FormatError(ValueError):
     pass
@@ -31,22 +32,18 @@ def check_range(data: bytes, off: int, size: int, label: str) -> None:
         raise FormatError(f"{label} range 0x{off:X}+0x{size:X} outside file 0x{len(data):X}")
 
 def read_palette(data: bytes, desc: int, bone_count: int, mesh_index: int) -> list[int]:
+    count = be_u32(data, desc + PALETTE_COUNT_OFFSET)
+    if count > PALETTE_SLOTS:
+        raise FormatError(f"mesh {mesh_index} palette count {count} exceeds {PALETTE_SLOTS}")
     palette = []
-    terminated = False
-    for slot in range(PALETTE_SLOTS):
+    for slot in range(count):
         value = be_u32(data, desc + PALETTE_OFFSET + slot * 4)
-        if value == 0xFFFFFFFF:
-            terminated = True
-            break
         if value >= bone_count:
             raise FormatError(
                 f"mesh {mesh_index} palette slot {slot} references bone {value}, "
                 f"but model has {bone_count} bones"
             )
         palette.append(value)
-    if not terminated and len(palette) == PALETTE_SLOTS:
-        # Full 21-entry palettes are allowed; there is no room for a terminator.
-        pass
     return palette
 
 def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
@@ -174,7 +171,7 @@ def inspect(data: bytes, samples: int = 3, sum_tolerance: float = 0.02) -> dict:
         "vertices_with_weight_sum_outside_tolerance": bad_sums,
         "global_bone_indices_used": sorted(global_bones_used),
         "candidate_encoding": {
-            "mesh_palette": "21 big-endian uint32 global bone indices at descriptor +0x08; 0xFFFFFFFF terminates",
+            "mesh_palette": "count at descriptor +0x08, followed by that many big-endian uint32 global bone indices from +0x0C (maximum 20)",
             "slot_index": "little-endian uint32 palette-local index",
             "weight": "big-endian float32",
             "sentinel_index": 255,
