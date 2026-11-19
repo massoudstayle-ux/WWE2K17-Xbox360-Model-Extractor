@@ -7,13 +7,12 @@ Research tools for inspecting **user-provided WWE 2K17 Xbox 360 files** and inve
 ## Current status
 
 - [x] Repository initialized
-- [ ] PAC container structure research
-- [ ] PAC header and metadata parser
-- [ ] Compression/container identification
-- [ ] Internal archive/resource extraction
-- [ ] YOBJ/model format research
-- [ ] Geometry, skeleton, and texture extraction
-- [ ] Export pipeline (only after formats are understood)
+- [x] PAC container structure research for ch120.pac and ch139.pac
+- [x] XMem TD decompression and HSPC/SHDC/BPE resource extraction
+- [x] JBOY geometry extraction to OBJ
+- [x] 109-node hierarchy and skin-weight structure analysis
+- [ ] Verify node transforms and inverse-bind matrices in a renderer
+- [ ] Rigged GLB/FBX export and visual validation in Godot
 
 ## Planned tools
 
@@ -27,7 +26,7 @@ Record verified observations and test results in `docs/format-notes.md`. Unknown
 
 ### 3. Model conversion
 
-The eventual goal is to investigate model/texture/skeleton extraction and conversion to FBX or GLB. This is not yet implemented.
+Static OBJ geometry is exported. The repository also validates mesh palettes, per-vertex influence records, and candidate node hierarchy. Rigged GLB/FBX export is still in progress; current OBJ previews are not animated characters.
 
 ## Usage
 
