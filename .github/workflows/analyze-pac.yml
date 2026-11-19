@@ -7,6 +7,8 @@ on:
       - 'ch139.pac'
       - 'tools/pac_probe.py'
       - 'tools/pac_analyze.py'
+      - 'tools/scan_decompressed.py'
+      - 'tests/test_scan_decompressed.py'
       - 'tools/inspect_xcompress.py'
       - 'docs/**'
       - 'tests/**'
@@ -86,6 +88,16 @@ jobs:
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+
+      - name: Scan XMem outputs for candidate model and texture signatures
+        if: always()
+        run: |
+          mkdir -p analysis-output/signature-scan
+          for file in analysis-output/decompressed/*.decompressed.bin; do
+            [ -f "$file" ] || continue
+            name="$(basename "$file" .decompressed.bin)"
+            python tools/scan_decompressed.py "$file" --output "analysis-output/signature-scan/$name-signatures.txt"
+          done
 
       - name: Run read-only PAC probe and exploratory analyzer
         env:
