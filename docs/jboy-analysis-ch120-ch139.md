@@ -28,3 +28,11 @@ The same checks also pass for extracted auxiliary JBOY entries in the artifact.
 2. Determine the correct bind/inverse-bind matrices and coordinate basis.
 3. Export a skinned GLB test first (more convenient to inspect), then FBX if the pipeline can preserve skinning.
 4. Inspect the model in Godot before claiming successful conversion.
+
+## Bone-record field inspection update
+
+A raw-offset inspector was added at `tools/inspect_jboy_bone_fields.py`. It emits the complete 0x50-byte record, candidate big-endian float groups at offsets 0x10, 0x20, and 0x40, and the raw uint32 at 0x30. These are **not** labeled as translation/rotation/matrix values.
+
+Important parser caution: earlier summary labels for fields at 0x40 and 0x44 overlap by 12 bytes. They must not be treated as two independent transform vectors. The raw inspector now avoids that false separation.
+
+The workflow runs this report for each decoded JBOY. The next validation must compare values across named bones/models and, ideally, a known-good reference rig before assigning transform semantics.
