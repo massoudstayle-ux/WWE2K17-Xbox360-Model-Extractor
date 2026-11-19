@@ -246,15 +246,16 @@ jobs:
             echo "No decoded JBOY files were available for skin-weight validation." | tee analysis-output/skinning/NO-JBOY-INPUT.txt
           fi
 
-      - name: Install Blender for rigged FBX export
+      - name: Install pinned Blender 4.2.0 for rigged FBX export
         if: always()
         run: |
-          choco install blender --yes --no-progress
-          BLENDER="$(where.exe blender 2>/dev/null | head -n 1 | tr -d '\r' || true)"
-          if [ -z "$BLENDER" ]; then
-            BLENDER="$(find '/c/Program Files/Blender Foundation' '/c/ProgramData/chocolatey/lib/blender' -type f -iname blender.exe 2>/dev/null | head -n 1)"
-          fi
-          test -n "$BLENDER" || { echo "Blender executable not found after Chocolatey install"; exit 1; }
+          BLENDER_ARCHIVE="/tmp/blender-4.2.0-windows-x64.zip"
+          BLENDER_DIR="/tmp/blender-4.2.0-windows-x64"
+          curl -L --fail --retry 3 "https://download.blender.org/release/Blender4.2/blender-4.2.0-windows-x64.zip" -o "$BLENDER_ARCHIVE"
+          unzip -q "$BLENDER_ARCHIVE" -d /tmp
+          BLENDER="$BLENDER_DIR/blender.exe"
+          test -f "$BLENDER" || { echo "Pinned Blender 4.2.0 executable not found"; exit 1; }
+          "$BLENDER" --version | head -n 3
           echo "$BLENDER" > /tmp/blender-path.txt
 
       - name: Export both SHDC body variants to rigged FBX
