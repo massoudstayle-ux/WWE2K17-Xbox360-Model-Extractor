@@ -16,7 +16,7 @@ def extract_models(data: bytes, source_name: str, output_dir: Path) -> dict:
     for item in containers["shdc_entries"]:
         if item["magic"] != "BPE ":
             continue
-        label = f"{source_name}_SHDC{item['index']}_entry{item['name']}"
+        label = f"{source_name}_SHDC{item['parent_index']}_entry{item['index']}_{item['name']}"
         try:
             packed = data[item["offset"]:item["offset"]+item["length"]]
             decoded = decode_yuke_bpe(packed)
