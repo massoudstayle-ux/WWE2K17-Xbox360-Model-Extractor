@@ -1,0 +1,63 @@
+name: Render existing FBX exports
+
+on:
+  push:
+    paths:
+      - '.github/workflows/render-existing-fbx.yml'
+      - 'tools/render_fbx_previews.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  render-previews:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download successful extraction artifact (Run 83)
+        uses: actions/download-artifact@v4
+        with:
+          name: ch120-ch139-pac-comparison
+          path: artifact
+          repository: ${{ github.repository }}
+          run-id: 44598742608
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Blender 4.2.0
+        shell: pwsh
+        run: |
+          $archive = "$env:RUNNER_TEMP\blender-4.2.0-windows-x64.zip"
+          Invoke-WebRequest -Uri "https://download.blender.org/release/Blender4.2/blender-4.2.0-windows-x64.zip" -OutFile $archive
+          Expand-Archive -Path $archive -DestinationPath "$env:RUNNER_TEMP\blender" -Force
+          $blender = Get-ChildItem "$env:RUNNER_TEMP\blender" -Filter blender.exe -Recurse | Select-Object -First 1
+          if (-not $blender) { throw "Blender executable was not found" }
+          "BLENDER_EXE=$($blender.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Render each combined FBX
+        shell: pwsh
+        run: |
+          $inputs = Get-ChildItem "artifact\fbx-combined" -Filter "*-complete.fbx"
+          if (-not $inputs) { throw "No combined FBX files were found in Run 83 artifact" }
+          New-Item -ItemType Directory -Force -Path "previews" | Out-Null
+          foreach ($fbx in $inputs) {
+            $png = Join-Path "previews" ($fbx.BaseName + ".png")
+            & $env:BLENDER_EXE --background --python "tools/render_fbx_previews.py" -- $fbx.FullName $png
+            if ($LASTEXITCODE -ne 0 -or -not (Test-Path $png)) {
+              throw "Preview render failed for $($fbx.Name)"
+            }
+          }
+          Get-ChildItem previews
+
+      - name: Upload FBX visual previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch120-ch139-fbx-visual-previews
+          path: previews/
+          if-no-files-found: error
+          retention-days: 14
