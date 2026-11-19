@@ -17,7 +17,7 @@ if not meshes:
 for obj in meshes:
     if not obj.data.materials:
         mat = bpy.data.materials.new("Preview_Neutral")
-        mat.diffuse_color = (0.52, 0.52, 0.56, 1.0)
+        mat.diffuse_color = (0.52, 0.56, 0.62, 1.0)
         obj.data.materials.append(mat)
 
 points = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
@@ -51,7 +51,11 @@ for offset, energy in [
     light_obj.rotation_euler = (center - light_obj.location).to_track_quat("-Z", "Y").to_euler()
 
 scene = bpy.context.scene
-scene.render.engine = "BLENDER_EEVEE_NEXT"
+# Cycles CPU avoids the OpenGL context crash seen with Eevee on hosted Windows runners.
+scene.render.engine = "CYCLES"
+scene.cycles.device = "CPU"
+scene.cycles.samples = 16
+scene.cycles.use_denoising = False
 scene.render.resolution_x = 768
 scene.render.resolution_y = 1024
 scene.render.resolution_percentage = 100
@@ -62,4 +66,6 @@ if scene.world is None:
 scene.world.color = (0.08, 0.08, 0.08)
 os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
 bpy.ops.render.render(write_still=True)
-print("PREVIEW_OK", output, "mesh_objects=", len(meshes))
+if not os.path.isfile(os.path.abspath(output)) or os.path.getsize(os.path.abspath(output)) == 0:
+    raise RuntimeError("Preview render did not create a non-empty PNG")
+print("PREVIEW_OK", output, "mesh_objects=", len(meshes), "engine=CYCLES_CPU")
