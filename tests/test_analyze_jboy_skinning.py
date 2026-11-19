@@ -21,7 +21,8 @@ def make_jboy(local_indices=(0, 1), weights=(0.75, 0.25), palette=(3, 1)):
     struct.pack_into(">I", data, desc + 0x6C, weight_offset - 8)
     struct.pack_into(">I", data, desc + 0x70, uv_offset - 8)
     for i, (local, weight) in enumerate(zip(local_indices, weights)):
-        struct.pack_into("<I", data, weight_offset + i * 8, local)
+        data[weight_offset + i * 8] = local
+        data[weight_offset + i * 8 + 1:weight_offset + i * 8 + 4] = bytes(3)
         struct.pack_into(">f", data, weight_offset + i * 8 + 4, weight)
     return bytes(data)
 
@@ -47,6 +48,13 @@ class SkinningPaletteTests(unittest.TestCase):
     def test_rejects_palette_bone_outside_model(self):
         with self.assertRaises(FormatError):
             inspect(make_jboy(palette=(4, 1)))
+
+    def test_rejects_nonzero_influence_padding(self):
+        data = bytearray(make_jboy())
+        data[0x201] = 1
+        report = inspect(bytes(data))
+        self.assertFalse(report["all_checks_passed"])
+        self.assertGreater(report["invalid_weight_slots"], 0)
 
 
 if __name__ == "__main__":
