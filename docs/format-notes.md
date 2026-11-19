@@ -116,3 +116,8 @@ The downloaded artifact for workflow run 44558087745 was inspected directly. It 
 The extracted model summaries identify a promising accessory match for ch120: resource `2710` has 24 bones, including `Bip`, `Bip Spine`, `Bip Spine1`, `Bip Neck`, `Neck_x`, `Bip Head`, and the hair/face bones. These names are present in the 109-node ch120 body skeleton. This is a candidate for the existing strict accessory merge validator; it must still pass the rest-transform and vertex-group checks before being included in a combined FBX. ch139 resource `271A` has 100 bones and is labeled as a towel candidate; do not classify it as clothing until the mesh is visually inspected.
 
 Next validation must run the current workflow revision and inspect its actual artifact. Confirm that separate accessory FBXs were exported, record which passed/rejected the strict shared-skeleton merge, and visually inspect the resulting combined FBX in Blender or Godot. Texture recovery remains incomplete until actual image files decode and their UV/material assignments are confirmed. The original PAC inputs remain read-only.
+
+
+## Follow-up CI scope clarification (2026-11-19)
+
+The artifact from run 44558087745 was downloaded and its ZIP directory listing was checked directly. It contains the four main-body FBX exports and model-analysis reports, but no accessory FBX exports, combined FBX files, preview PNGs, or recovered DDS files. The workflow definition now includes separate accessory export, strict skeleton-compatible merge, combined-FBX preview, and texture-resource extraction stages; those later stages must be verified from a run that actually executed this workflow revision. Until then, do not label either character as fully dressed or textured. Keep all PAC inputs read-only.
