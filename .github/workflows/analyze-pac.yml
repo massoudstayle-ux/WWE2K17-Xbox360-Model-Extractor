@@ -13,6 +13,8 @@ on:
       - 'tools/extract_jboy_models.py'
       - 'tools/analyze_jboy_skinning.py'
       - 'tools/validate_jboy_bone_hierarchy.py'
+      - 'tools/inspect_jboy_bone_fields.py'
+      - 'tests/test_inspect_jboy_bone_fields.py'
       - 'tests/test_decode_yuke_bpe.py'
       - 'tests/test_export_jboy_obj.py'
       - 'tools/parse_hspc.py'
@@ -140,6 +142,21 @@ jobs:
           done
           if [ "$found" -eq 0 ]; then
             echo "No model summaries were available for hierarchy validation." | tee analysis-output/bone-hierarchy/NO-SUMMARIES.txt
+          fi
+
+      - name: Inspect raw candidate bone fields
+        if: always()
+        run: |
+          mkdir -p analysis-output/bone-fields
+          found=0
+          for file in analysis-output/extracted-models/*_JBOY.bin; do
+            [ -f "$file" ] || continue
+            found=1
+            name="$(basename "$file" _JBOY.bin)"
+            python tools/inspect_jboy_bone_fields.py "$file" --output "analysis-output/bone-fields/$name-bone-fields.json"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No decoded JBOY files available for raw bone-field inspection." | tee analysis-output/bone-fields/NO-JBOY-INPUT.txt
           fi
 
       - name: Validate JBOY skin-weight buffer spans
