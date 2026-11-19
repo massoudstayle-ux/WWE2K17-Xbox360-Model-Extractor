@@ -60,7 +60,7 @@ def signature_hits(data: bytes) -> list[tuple[int, str]]:
 def valid_gzip_members(data: bytes, max_output: int = 32 * 1024 * 1024) -> list[tuple[int, int, int, bytes]]:
     """Return (offset, compressed_size, output_size, output_prefix) for validated members."""
     results = []
-    marker = b"\\x1f\\x8b"
+    marker = b"\x1f\x8b"
     offset = 0
     while True:
         offset = data.find(marker, offset)
