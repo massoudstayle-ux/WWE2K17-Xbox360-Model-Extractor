@@ -126,12 +126,13 @@ def parse_model(data: bytes, emote: int = 0) -> dict:
             "parent_index_candidate": None if parent_raw == 0xFFFFFFFF else parent_raw,
             "parent_raw_0x30": parent_raw,
             "local_position_candidate": [f32(data, off + 0x10 + j*4) for j in range(4)],
-            "local_rotation_euler_radians_candidate": [f32(data, off + 0x20 + j*4) for j in range(3)],
-            "global_position_candidate": [f32(data, off + 0x40 + j*4) for j in range(3)],
-            "unknown_float_0x4C": f32(data, off + 0x4C),
+            "local_rotation_euler_radians_candidate": [f32(data, off + 0x1C + j*4) for j in range(3)],
+            "node_u40_candidate": u32(data, off + 0x28),
+            "node_u44_candidate": u32(data, off + 0x2C),
+            "bounding_sphere_candidate": [f32(data, off + 0x40 + j*4) for j in range(4)],
             # Keep the previous field name for existing report consumers.
             "unknown_0x30": parent_raw,
-            "translation_candidate": [f32(data, off + 0x44 + j*4) for j in range(3)]
+            "translation_candidate": [f32(data, off + 0x10 + j*4) for j in range(3)]
         })
     textures = [
         data[texture_offset+i*0x10:texture_offset+(i+1)*0x10].split(b"\0",1)[0].decode("ascii","replace")
