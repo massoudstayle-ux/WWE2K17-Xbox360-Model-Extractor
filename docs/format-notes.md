@@ -64,3 +64,17 @@ Important limitations: OBJ contains geometry and UV coordinates only. Skeleton h
 - pozzum/WrestleMINUS identifies HSPC, SHDC, BPE, and JBOY, and contains JBOY model parsing.
 - WrestleMINUS ModelView.vb documents JBOY sub-object vertex, UV, and triangle-strip parsing.
 - Luigi Auriemma's Yuke BPE routine is reproduced in the Legends of Modding discussion on BPE compression alternatives.
+
+
+## Bone-record metadata pass (2026-11-19)
+
+The JBOY exporter now exposes the known 0x50-byte bone-record fields as analysis candidates:
+- local position candidate: four big-endian floats at bone record + 0x10
+- local Euler rotation candidate: three big-endian floats at +0x20
+- parent index candidate: big-endian u32 at +0x30 (0xFFFFFFFF is represented as no parent)
+- global position candidate: three big-endian floats at +0x40
+- additional float at +0x4C
+
+The older `unknown_0x30` and `translation_candidate` keys are retained for report compatibility. These fields have not yet been validated as a complete Godot-compatible bind pose. In particular, matrix conventions, coordinate conversion, and skin-weight-to-bone mapping remain unresolved.
+
+The current CI export remains OBJ + JSON + raw decoded JBOY. It does not produce FBX, and the current geometry exporter does not yet read per-vertex skin weights. Do not treat the OBJ preview as a rigged character.
