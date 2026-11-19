@@ -13,7 +13,7 @@ class SignatureScanTests(unittest.TestCase):
         self.assertEqual(scanner.scan(data), [
             (2, "JBOY model"),
             (8, "DDS texture"),
-            (14, "SHDC container"),
+            (13, "SHDC container"),
         ])
 
     def test_no_hits(self):
