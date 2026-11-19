@@ -354,6 +354,38 @@ jobs:
           ls -lh analysis-output/fbx-combined
 
 
+      - name: Render FBX visual previews for inspection
+        if: always()
+        run: |
+          BLENDER="$(cat /tmp/blender-path.txt)"
+          mkdir -p analysis-output/previews
+          for f in analysis-output/fbx-combined/*-complete.fbx; do
+            [ -f "$f" ] || continue
+            out="analysis-output/previews/$(basename "$f" .fbx).png"
+            "$BLENDER" --background --python-expr '
+import bpy, sys, math
+from mathutils import Vector
+fbx=sys.argv[-2]; out=sys.argv[-1]
+bpy.ops.wm.read_factory_settings(use_empty=True)
+bpy.ops.import_scene.fbx(filepath=fbx)
+meshes=[o for o in bpy.context.scene.objects if o.type=="MESH"]
+if not meshes: raise RuntimeError("FBX contains no mesh objects")
+# Apply neutral material only when FBX has no material; keep imported materials otherwise.
+for o in meshes:
+ if not o.data.materials:
+  m=bpy.data.materials.new("Preview_Neutral"); m.diffuse_color=(0.55,0.55,0.58,1); o.data.materials.append(m)
+pts=[Vector(corner) for o in meshes for corner in (o.matrix_world @ Vector(v) for v in o.bound_box)]
+lo=Vector((min(p.x for p in pts),min(p.y for p in pts),min(p.z for p in pts))); hi=Vector((max(p.x for p in pts),max(p.y for p in pts),max(p.z for p in pts)))
+center=(lo+hi)/2; size=max(hi-lo); size=max(size,0.1)
+camdata=bpy.data.cameras.new("PreviewCamera"); cam=bpy.data.objects.new("PreviewCamera",camdata); bpy.context.scene.collection.objects.link(cam)
+cam.location=center+Vector((size*2.6,-size*3.5,size*1.4)); direction=center-cam.location; cam.rotation_euler=direction.to_track_quat("-Z","Y").to_euler(); camdata.type="ORTHO"; camdata.ortho_scale=size*1.45; bpy.context.scene.camera=cam
+for loc,power,size_l in [(center+Vector((size*2,-size*2,size*3)),1800,size*2),(center+Vector((-size*2,-size,size*1.5)),1100,size*2)]:
+ ld=bpy.data.lights.new("PreviewLight","AREA"); loobj=bpy.data.objects.new("PreviewLight",ld); bpy.context.scene.collection.objects.link(loobj); loobj.location=loc; ld.energy=power; ld.shape="DISK"; ld.size=size_l; loobj.rotation_euler=(center-loobj.location).to_track_quat("-Z","Y").to_euler()
+scene=bpy.context.scene; scene.render.engine="BLENDER_EEVEE_NEXT"; scene.render.resolution_x=768; scene.render.resolution_y=1024; scene.render.resolution_percentage=100; scene.render.image_settings.file_format="PNG"; scene.render.filepath=out; scene.world.color=(0.08,0.08,0.08)
+bpy.ops.render.render(write_still=True)
+' -- "$f" "$out"
+          done
+          ls -lh analysis-output/previews
       - name: Run read-only PAC probe and exploratory analyzer
         env:
           TARGET_FILE: ${{ inputs.target_file }}
