@@ -117,10 +117,20 @@ def parse_model(data: bytes, emote: int = 0) -> dict:
     for i in range(bone_count):
         off = bone_offset + i * 0x50
         raw_name = data[off:off+0x10].split(b"\0", 1)[0]
+        parent_raw = u32(data, off + 0x30)
         bones.append({
             "index": i,
             "name": raw_name.decode("ascii", "replace"),
-            "unknown_0x30": u32(data, off + 0x30),
+            # Yuke's 0x50-byte bone record. These transform fields are exposed
+            # for analysis; they are not yet converted into a verified rig.
+            "parent_index_candidate": None if parent_raw == 0xFFFFFFFF else parent_raw,
+            "parent_raw_0x30": parent_raw,
+            "local_position_candidate": [f32(data, off + 0x10 + j*4) for j in range(4)],
+            "local_rotation_euler_radians_candidate": [f32(data, off + 0x20 + j*4) for j in range(3)],
+            "global_position_candidate": [f32(data, off + 0x40 + j*4) for j in range(3)],
+            "unknown_float_0x4C": f32(data, off + 0x4C),
+            # Keep the previous field name for existing report consumers.
+            "unknown_0x30": parent_raw,
             "translation_candidate": [f32(data, off + 0x44 + j*4) for j in range(3)]
         })
     textures = [
