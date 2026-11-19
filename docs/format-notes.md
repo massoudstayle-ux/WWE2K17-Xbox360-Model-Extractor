@@ -56,3 +56,8 @@ The first QuickBMS workflow attempt failed before decoding: the mirror's `quickb
 The workflow now builds `PopGameTool/XMemCompression` from its public source and runs its CLI in decompression mode against copies of `ch120.pac` and `ch139.pac`. That repository documents support for whole-file XMem LZX TD streams beginning with `0F F5 12 ED`. Its implementation is compatibility-oriented reverse engineering, not an official Microsoft decoder. Results must be validated by exit status, output size, output magic, and subsequent container parsing; a generated file alone does not prove successful extraction.
 
 All decoded outputs go under `analysis-output/decompressed/`; source PAC files are read-only. If the decoder rejects a file, the next task is to compare its 16-byte header/segment table assumptions with the actual bytes and seek a second independent decoder.
+
+
+### Decoder build environment adjustment
+
+The first Linux build of the compatibility decoder failed because its C++ sources include the Windows SDK header `windows.h`; it is not currently a portable Linux build despite the top-level CMake project. The workflow was moved to a Windows GitHub Actions runner (with Bash shell for the existing scripts) so the source can compile against the native Windows SDK and execute there. No PAC decode result is available yet.
