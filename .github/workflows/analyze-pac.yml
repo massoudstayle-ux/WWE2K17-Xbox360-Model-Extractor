@@ -165,6 +165,16 @@ jobs:
           done
           python tools/build_dds_contact_sheet.py analysis-output/texture-audit --output-dir analysis-output/texture-audit
 
+      - name: Add recovered non-BPE DDS candidates to texture audit
+        if: always()
+        run: |
+          mkdir -p analysis-output/texture-audit
+          for file in analysis-output/texture-resources/*.dds; do
+            [ -f "$file" ] || continue
+            cp -n "$file" analysis-output/texture-audit/ || true
+          done
+          python tools/build_dds_contact_sheet.py analysis-output/texture-audit --output-dir analysis-output/texture-audit
+
       - name: Decode BPE resources and export JBOY static meshes
         if: always()
         run: |
