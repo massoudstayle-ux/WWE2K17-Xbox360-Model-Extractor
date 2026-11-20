@@ -21,3 +21,12 @@ For each decoded JBOY model, the generated JSON will include the DDS candidate f
 
 ## Next validation
 After a successful Actions run, compare the JBOY audit JSON with DDS dimensions and visual contact sheet. Use UV bounds and shader labels to narrow candidate mappings, then validate in Blender with a small number of material assignments before applying across the character.
+
+## Texture-slot names recorded from prior run 79 audit
+
+The earlier run-79 raw inspection listed these names (names are evidence; exact image-to-mesh usage is not established):
+
+- **CH120:** `color`, `normal`, `mask`, `hair_shift`, `hair_noise`, `wrinkles_n`, `mf12`, `sweat_bump`, `noise2`, `cubemap_eyes` (plus one empty slot).
+- **CH139:** `color`, `normal`, `mask`, `wrinkles_n`, `mf12`, `sweat_bump`, `noise2`, `cubemap_eyes`, `mf01` through `mf11` (plus one empty slot).
+
+The labels `color` and `normal` are promising candidates for base-color and normal textures, but this is not yet a verified material mapping. Masks and the `mf*` entries require shader-format validation.
