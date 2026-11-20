@@ -30,3 +30,12 @@ The earlier run-79 raw inspection listed these names (names are evidence; exact 
 - **CH139:** `color`, `normal`, `mask`, `wrinkles_n`, `mf12`, `sweat_bump`, `noise2`, `cubemap_eyes`, `mf01` through `mf11` (plus one empty slot).
 
 The labels `color` and `normal` are promising candidates for base-color and normal textures, but this is not yet a verified material mapping. Masks and the `mf*` entries require shader-format validation.
+
+
+## Follow-up workflow improvement
+
+The workflow now also copies recovered DDS files from `analysis-output/texture-resources/` into the audit candidate folder after the non-BPE texture extraction step, then rebuilds the contact sheet. This expands the visual candidate set beyond BPE-decoded DDS files.
+
+The copy uses `cp -n` to avoid overwriting a same-named candidate already collected. **This is still candidate collection only**: it does not assign a DDS to a mesh or prove the texture's role.
+
+Commit: `c36f31df31b4d40276a8d8dacee678652e3a4fb3`.
