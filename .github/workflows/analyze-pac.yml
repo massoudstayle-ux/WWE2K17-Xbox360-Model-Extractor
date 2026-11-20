@@ -183,7 +183,7 @@ jobs:
             [ -f "$file" ] || continue
             found=1
             name="$(basename "$file" _JBOY.bin)"
-            python tools/audit_jboy_material_links.py "$file" --output "analysis-output/material-audit/$name-material-audit.json"
+            python tools/audit_jboy_material_links.py "$file" --dds-dir analysis-output/texture-audit --output "analysis-output/material-audit/$name-material-audit.json"
           done
           if [ "$found" -eq 0 ]; then
             echo "No JBOY files available for material-slot audit." | tee analysis-output/material-audit/NO-JBOY-INPUT.txt
